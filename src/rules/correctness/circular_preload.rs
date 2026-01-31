@@ -146,7 +146,6 @@ fn find_cycles_from(
         visited: &mut HashSet<PathBuf>,
         path: &mut Vec<PathBuf>,
         cycles: &mut Vec<Vec<PathBuf>>,
-        start: &Path,
     ) {
         if path.contains(&node.to_path_buf()) {
             // Found a cycle - extract it
@@ -170,14 +169,14 @@ fn find_cycles_from(
 
         if let Some(deps) = graph.get(&node.to_path_buf()) {
             for dep in deps {
-                dfs(dep, graph, visited, path, cycles, start);
+                dfs(dep, graph, visited, path, cycles);
             }
         }
 
         path.pop();
     }
 
-    dfs(start, graph, &mut visited, &mut path, &mut cycles, start);
+    dfs(start, graph, &mut visited, &mut path, &mut cycles);
 
     if cycles.is_empty() {
         None

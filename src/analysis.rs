@@ -379,6 +379,7 @@ pub fn analyze_source(
 
     // Use cross-file context if provided, otherwise create single-file defaults
     let (call_graph_owned, reachable_owned);
+    #[allow(clippy::type_complexity)]
     let (call_graph, reachable_functions, all_file_symbols): (
         &CallGraph,
         &Arc<HashSet<(PathBuf, String)>>,
