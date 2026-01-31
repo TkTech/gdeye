@@ -17,7 +17,7 @@ jobs:
             os: windows-latest
             ext: zip
           - target: x86_64-apple-darwin
-            os: macos-13
+            os: macos-15
             ext: tar.gz
           - target: aarch64-apple-darwin
             os: macos-14
