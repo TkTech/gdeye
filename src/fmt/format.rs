@@ -695,7 +695,7 @@ fn find_var_value<'a>(node: Node<'a>, _src: &str) -> Option<Node<'a>> {
     // The value is typically the last named child that isn't name/type/inferred_type/annotations.
     let count = node.named_child_count();
     for i in (0..count).rev() {
-        if let Some(child) = node.named_child(i) {
+        if let Some(child) = node.named_child(i as u32) {
             if !matches!(
                 child.kind(),
                 "name" | "type" | "inferred_type" | "annotations" | "setget" | "static_keyword"
@@ -1611,7 +1611,7 @@ fn format_binary_op(node: Node, src: &str, comments: &mut CommentStore, config: 
     let mut right: Option<Node> = None;
 
     for i in 0..child_count {
-        if let Some(child) = node.child(i) {
+        if let Some(child) = node.child(i as u32) {
             if child.is_named() {
                 if left.is_none() {
                     left = Some(child);
@@ -1654,7 +1654,7 @@ fn format_unary_op(node: Node, src: &str, comments: &mut CommentStore, config: &
     let mut operand: Option<Node> = None;
 
     for i in 0..child_count {
-        if let Some(child) = node.child(i) {
+        if let Some(child) = node.child(i as u32) {
             if child.is_named() {
                 operand = Some(child);
             } else {
@@ -1719,7 +1719,7 @@ fn format_augmented_assignment(
     let mut rhs: Option<Node> = None;
 
     for i in 0..child_count {
-        if let Some(child) = node.child(i) {
+        if let Some(child) = node.child(i as u32) {
             if child.is_named() {
                 if lhs.is_none() {
                     lhs = Some(child);

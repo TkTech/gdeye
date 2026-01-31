@@ -241,9 +241,8 @@ fn collect_attribute_marks(
 
 /// Get the receiver node of an attribute access (the object before the dot).
 fn get_attribute_receiver(node: Node) -> Option<Node> {
-    let count = node.child_count();
-    for i in 0..count {
-        if let Some(child) = node.child(i) {
+    for i in 0..node.child_count() {
+        if let Some(child) = node.child(i as u32) {
             if child.is_named() {
                 return Some(child);
             }

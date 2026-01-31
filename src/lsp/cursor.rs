@@ -135,14 +135,14 @@ impl<'a> CursorContext<'a> {
             if node.kind() == "attribute" {
                 // Get the first named child (the receiver)
                 let receiver = (0..node.child_count())
-                    .filter_map(|i| node.child(i))
+                    .filter_map(|i| node.child(i as u32))
                     .find(|c| c.is_named());
                 if let Some(receiver) = receiver {
                     let receiver_text = Self::node_text(receiver, source).to_string();
                     let receiver_range = (receiver.start_byte(), receiver.end_byte());
                     // Get the member if it exists (second named child)
                     let member = (0..node.child_count())
-                        .filter_map(|i| node.child(i))
+                        .filter_map(|i| node.child(i as u32))
                         .filter(|c| c.is_named())
                         .nth(1)
                         .filter(|n| n.kind() == "identifier")
@@ -155,14 +155,32 @@ impl<'a> CursorContext<'a> {
                     };
                 }
             }
-            // Case 2: Cursor is on a '.' node whose parent is ERROR or attribute
+            // Case 2: Cursor is on a '.' node - look for identifier before it
             else if node.kind() == "." {
-                if let Some(p) = parent {
-                    if p.kind() == "ERROR" || p.kind() == "attribute" {
-                        if let Some(ident) = p.child(0) {
-                            if ident.kind() == "identifier" {
-                                let receiver_text = Self::node_text(ident, source).to_string();
-                                let receiver_range = (ident.start_byte(), ident.end_byte());
+                if let Some(prev_sibling) = node.prev_sibling() {
+                    if prev_sibling.kind() == "identifier" {
+                        let receiver_text = Self::node_text(prev_sibling, source).to_string();
+                        let receiver_range = (prev_sibling.start_byte(), prev_sibling.end_byte());
+                        kind = CursorKind::MemberAccess {
+                            receiver_text,
+                            receiver_range,
+                            member: String::new(),
+                        };
+                    }
+                }
+            }
+            // Case 3: Cursor is right after a dot (e.g., at newline after "store.")
+            else if offset > 0 && source.as_bytes().get(offset - 1).copied() == Some(b'.') {
+                // Find the dot node
+                if let Some(dot_node) = Self::find_deepest_node(root, offset - 1) {
+                    if dot_node.kind() == "." {
+                        // Look for identifier immediately before the dot
+                        if let Some(prev_sibling) = dot_node.prev_sibling() {
+                            if prev_sibling.kind() == "identifier" {
+                                let receiver_text =
+                                    Self::node_text(prev_sibling, source).to_string();
+                                let receiver_range =
+                                    (prev_sibling.start_byte(), prev_sibling.end_byte());
                                 kind = CursorKind::MemberAccess {
                                     receiver_text,
                                     receiver_range,
@@ -170,29 +188,6 @@ impl<'a> CursorContext<'a> {
                                 };
                             }
                         }
-                    }
-                }
-            }
-            // Case 3: Cursor is right after a dot (e.g., at newline after "store.")
-            else if offset > 0 && source.as_bytes().get(offset - 1).copied() == Some(b'.') {
-                if let Some(prev_node) = Self::find_deepest_node(root, offset - 1) {
-                    let mut check_node = Some(prev_node);
-                    while let Some(n) = check_node {
-                        if n.kind() == "ERROR" || n.kind() == "attribute" {
-                            if let Some(ident) = n.child(0) {
-                                if ident.kind() == "identifier" {
-                                    let receiver_text = Self::node_text(ident, source).to_string();
-                                    let receiver_range = (ident.start_byte(), ident.end_byte());
-                                    kind = CursorKind::MemberAccess {
-                                        receiver_text,
-                                        receiver_range,
-                                        member: String::new(),
-                                    };
-                                    break;
-                                }
-                            }
-                        }
-                        check_node = n.parent();
                     }
                 }
             }
@@ -230,7 +225,7 @@ impl<'a> CursorContext<'a> {
                 if ancestor.kind() == "function_definition" {
                     // Look for the return type (child with kind "type")
                     for i in 0..ancestor.child_count() {
-                        if let Some(child) = ancestor.child(i) {
+                        if let Some(child) = ancestor.child(i as u32) {
                             if child.kind() == "type" {
                                 let type_text = Self::node_text(child, source).trim().to_string();
                                 if !type_text.is_empty() {
@@ -538,7 +533,7 @@ impl<'a> CursorContext<'a> {
     fn get_first_named_child(node: Node<'a>) -> Option<Node<'a>> {
         let count = node.child_count();
         for i in 0..count {
-            if let Some(child) = node.child(i) {
+            if let Some(child) = node.child(i as u32) {
                 if child.is_named() {
                     return Some(child);
                 }

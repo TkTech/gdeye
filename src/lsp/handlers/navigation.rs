@@ -406,7 +406,7 @@ fn find_node_at_offset(root: tree_sitter::Node, offset: usize) -> Option<tree_si
 fn get_attribute_receiver(node: tree_sitter::Node) -> Option<tree_sitter::Node> {
     let count = node.child_count();
     for i in 0..count {
-        if let Some(child) = node.child(i) {
+        if let Some(child) = node.child(i as u32) {
             if child.is_named() {
                 return Some(child);
             }

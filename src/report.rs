@@ -45,7 +45,7 @@ pub fn emit_diagnostics(path: &Path, source: &str, diagnostics: &[Diagnostic]) {
 
         let span = offset..end_offset.max(offset + 1);
 
-        let mut builder = Report::build(kind, &path_str, offset)
+        let mut builder = Report::build(kind, (&path_str, span.clone()))
             .with_message(format!("[{}] {}", diag.rule, diag.message))
             .with_label(
                 Label::new((&path_str, span))

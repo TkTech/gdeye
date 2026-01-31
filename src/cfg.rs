@@ -10,7 +10,7 @@ fn find_node_name(node: Node, parsed: &ParsedFile) -> Option<String> {
         return Some(parsed.node_text(n).to_string());
     }
     for i in 0..node.child_count() {
-        if let Some(child) = node.child(i) {
+        if let Some(child) = node.child(i as u32) {
             if child.kind() == "name" {
                 return Some(parsed.node_text(child).to_string());
             }

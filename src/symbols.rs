@@ -477,7 +477,7 @@ fn extract_variable(node: Node, parsed: &ParsedFile, scope: &Scope) -> Option<Va
         let count = node.child_count();
         let mut last_value = None;
         for i in 0..count {
-            if let Some(child) = node.child(i) {
+            if let Some(child) = node.child(i as u32) {
                 if child.is_named() && !matches!(child.kind(), "name" | "type" | "inferred_type") {
                     last_value = Some(child);
                 }
@@ -684,7 +684,7 @@ fn extract_function(node: Node, parsed: &ParsedFile) -> Option<FuncDecl> {
                         .or_else(|| {
                             // Find child of kind "type"
                             for i in 0..child.child_count() {
-                                if let Some(c) = child.child(i) {
+                                if let Some(c) = child.child(i as u32) {
                                     if c.kind() == "type" {
                                         return Some(c);
                                     }
@@ -743,7 +743,7 @@ fn extract_function(node: Node, parsed: &ParsedFile) -> Option<FuncDecl> {
                             // Find the value expression (skip name and '=')
                             let count = child.child_count();
                             for i in 0..count {
-                                if let Some(c) = child.child(i) {
+                                if let Some(c) = child.child(i as u32) {
                                     if c.kind() != "identifier"
                                         && c.kind() != "name"
                                         && c.kind() != "="
