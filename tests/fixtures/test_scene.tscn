@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/Player.gd" id="1_abc"]
+
+[node name="Root" type="Node3D"]
+
+[node name="Player" type="CharacterBody3D" parent="."]
+script = ExtResource("1_abc")
+
+[node name="CollisionShape" type="CollisionShape3D" parent="Player"]
+
+[node name="Camera" type="Camera3D" parent="Player"]
+
+[connection signal="body_entered" from="Player" to="." method="_on_player_body_entered"]

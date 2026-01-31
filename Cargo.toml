@@ -1,0 +1,62 @@
+[package]
+name = "gdeye"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+description = "Static analysis tool and library for GDScript"
+license = "MIT"
+repository = "https://github.com/TkTech/gdeye"
+homepage = "https://github.com/TkTech/gdeye"
+readme = "README.md"
+keywords = ["gdscript", "godot", "linter", "static-analysis"]
+categories = ["command-line-utilities", "development-tools"]
+exclude = [".github/"]
+
+[lib]
+name = "gdeye"
+path = "src/lib.rs"
+
+[[bin]]
+name = "gdeye"
+path = "src/main.rs"
+
+[features]
+default = ["lsp", "mcp"]
+lsp = ["tower-lsp", "tokio", "url"]
+mcp = ["rmcp", "tokio"]
+
+[dependencies]
+tree-sitter = "0.24"
+tree-sitter-gdscript = "5"
+clap = { version = "4", features = ["derive"] }
+walkdir = "2"
+ariadne = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+globset = "0.4"
+flate2 = "1"
+rayon = "1.10.0"
+similar = "2"
+thiserror = "2"
+which = "7"
+tempfile = "3"
+indexmap = "2"
+
+# LSP dependencies (optional)
+tower-lsp = { version = "0.20", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "io-std", "macros", "time", "sync"], optional = true }
+url = { version = "2", optional = true }
+
+# MCP dependencies (optional)
+rmcp = { version = "0.14", features = ["server", "transport-io", "macros"], optional = true }
+
+[build-dependencies]
+serde_json = "1"
+flate2 = "1"
+
+[dev-dependencies]
+serde_json = "1"
+
+[profile.release]
+debug = true

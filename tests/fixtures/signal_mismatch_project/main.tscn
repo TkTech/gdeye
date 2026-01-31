@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://emitter.gd" id="1_abc"]
+[ext_resource type="Script" path="res://handler.gd" id="2_def"]
+
+[node name="Main" type="Node2D"]
+
+[node name="Emitter" type="Node2D" parent="."]
+script = ExtResource("1_abc")
+
+[node name="Handler" type="Control" parent="."]
+script = ExtResource("2_def")
+
+[connection signal="died" from="Emitter" to="Handler" method="_on_died"]
+[connection signal="damage_taken" from="Emitter" to="Handler" method="_on_damage_taken"]
+[connection signal="health_changed" from="Emitter" to="Handler" method="_on_health_changed_wrong"]
+[connection signal="health_changed" from="Emitter" to="Handler" method="_on_health_changed_ok"]

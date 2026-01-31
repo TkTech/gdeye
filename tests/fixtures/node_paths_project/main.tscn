@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://player.gd" id="1_abc"]
+
+[node name="Main" type="Node2D"]
+
+[node name="Player" type="CharacterBody2D" parent="."]
+script = ExtResource("1_abc")
+
+[node name="Sprite" type="Sprite2D" parent="Player"]
+
+[node name="CollisionShape" type="CollisionShape2D" parent="Player"]
+
+[node name="Camera" type="Camera2D" parent="Player"]
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HealthBar" type="ProgressBar" parent="UI"]

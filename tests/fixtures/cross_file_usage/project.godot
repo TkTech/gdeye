@@ -1,0 +1,9 @@
+[gd_resource type="ProjectSettings" format=3]
+
+[application]
+
+config/name="CrossFileTest"
+
+[autoload]
+
+GameManager="*res://manager.gd"

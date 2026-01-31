@@ -1,0 +1,23 @@
+[application]
+
+config/name="TestProject"
+
+[autoload]
+
+GameManager="*res://scripts/GameManager.gd"
+EventBus="*res://scripts/EventBus.gd"
+
+[input]
+
+move_left={
+"dead_zone": 0.5,
+"events": []
+}
+move_right={
+"dead_zone": 0.5,
+"events": []
+}
+jump={
+"dead_zone": 0.5,
+"events": []
+}

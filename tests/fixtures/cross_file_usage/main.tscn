@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game.gd" id="1_game"]
+[ext_resource type="Script" path="res://player.gd" id="2_player"]
+
+[node name="Root" type="Node"]
+script = ExtResource("1_game")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+script = ExtResource("2_player")
+speed = 10.0
+
+[connection signal="died" from="Player" to="." method="_game_over"]
