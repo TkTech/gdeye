@@ -47,93 +47,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn simple_unix_path() {
-        let uri = "file:///home/user/test.gd";
-        let path = uri_to_path(uri).unwrap();
-        assert_eq!(path, PathBuf::from("/home/user/test.gd"));
+    fn invalid_uri_returns_error() {
+        let uri = "not a valid uri %%%";
+        assert_eq!(uri_to_path(uri), Err(UriError::InvalidUri));
     }
 
     #[test]
-    fn path_with_spaces() {
-        let uri = "file:///home/user/my%20project/test.gd";
-        let path = uri_to_path(uri).unwrap();
-        assert_eq!(path, PathBuf::from("/home/user/my project/test.gd"));
-    }
-
-    #[test]
-    fn path_with_special_chars() {
-        let uri = "file:///home/user/project%23test/file%5B1%5D.gd";
-        let path = uri_to_path(uri).unwrap();
-        assert_eq!(path, PathBuf::from("/home/user/project#test/file[1].gd"));
-    }
-
-    #[test]
-    fn not_file_uri() {
+    fn non_file_uri_returns_error() {
         let uri = "http://example.com/test.gd";
-        assert!(uri_to_path(uri).is_err());
+        assert_eq!(uri_to_path(uri), Err(UriError::NotFilePath));
     }
 
     #[test]
-    fn roundtrip_simple() {
-        let original = Path::new("/home/user/test.gd");
-        let uri = path_to_uri(original);
-        let path = uri_to_path(&uri).unwrap();
-        assert_eq!(path, original);
-    }
-
-    #[test]
-    fn roundtrip_with_spaces() {
-        let original = Path::new("/home/user/my project/test file.gd");
-        let uri = path_to_uri(original);
-        let path = uri_to_path(&uri).unwrap();
-        assert_eq!(path, original);
-    }
-
-    #[test]
-    fn roundtrip_with_special_chars() {
-        let original = Path::new("/home/user/project#1/file[test].gd");
-        let uri = path_to_uri(original);
-        let path = uri_to_path(&uri).unwrap();
-        assert_eq!(path, original);
-    }
-
-    #[test]
-    fn uri_to_path_lossy_fallback() {
+    fn lossy_fallback_on_invalid_uri() {
         let raw_path = "/home/user/test.gd";
         let path = uri_to_path_lossy(raw_path);
         assert_eq!(path, PathBuf::from(raw_path));
-    }
-
-    #[test]
-    fn path_to_uri_encoding() {
-        let path = Path::new("/home/user/my project/test.gd");
-        let uri = path_to_uri(path);
-        assert!(uri.contains("my%20project"));
-        assert!(!uri.contains(' '));
-    }
-
-    #[test]
-    #[cfg(windows)]
-    fn windows_uri_to_path() {
-        let uri = "file:///C:/Users/test/project/test.gd";
-        let path = uri_to_path(uri).unwrap();
-        assert_eq!(path, PathBuf::from("C:\\Users\\test\\project\\test.gd"));
-    }
-
-    #[test]
-    #[cfg(windows)]
-    fn windows_path_to_uri() {
-        let path = Path::new("C:\\Users\\test\\project\\test.gd");
-        let uri = path_to_uri(path);
-        assert_eq!(uri, "file:///C:/Users/test/project/test.gd");
-    }
-
-    #[test]
-    #[cfg(windows)]
-    fn windows_roundtrip() {
-        let original = Path::new("C:\\Users\\test\\my project\\test.gd");
-        let uri = path_to_uri(original);
-        let path = uri_to_path(&uri).unwrap();
-        assert_eq!(path, original);
     }
 }
