@@ -254,7 +254,10 @@ fn collect_return_types(
         let expr_node = node.children(&mut cursor).find(|c| c.kind() != "return");
 
         if let Some(expr) = expr_node {
-            if let Some(t) = resolve_expr_type(expr, parsed, ctx) {
+            if expr.kind() == "null" {
+                // Explicit null return - mark it so we don't suggest a concrete type
+                types.push("null".to_string());
+            } else if let Some(t) = resolve_expr_type(expr, parsed, ctx) {
                 types.push(t);
             }
         } else {
@@ -275,6 +278,12 @@ fn collect_return_types(
 fn unify_return_types(types: &[String], class_db: &ClassDb) -> Option<String> {
     if types.is_empty() {
         // No return statements found - could be void or implicit null
+        return None;
+    }
+
+    // If any return statement is `return null`, we can't suggest a concrete type
+    // since GDScript can't express "Type | null" without using Variant
+    if types.iter().any(|t| t == "null") {
         return None;
     }
 
