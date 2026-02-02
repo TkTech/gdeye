@@ -280,8 +280,40 @@ fn conditional_always_overwritten_flagged() {
     // Pattern: var x = initial; if cond: x = a else: x = b; use(x)
     // The initial value is NEVER read - all paths overwrite
     assert!(
-        has_message(&output, "`value`") || has_message(&output, "dead_conditional_always_overwritten"),
+        has_message(&output, "`value`")
+            || has_message(&output, "dead_conditional_always_overwritten"),
         "Should flag when initial value is overwritten in all branches.\nOutput:\n{}",
+        output
+    );
+}
+
+// Regression tests for break-in-loop pattern (was causing false positives)
+
+#[test]
+fn break_in_search_loop_not_flagged() {
+    let output = run_gdeye("correctness_dead_assignment.gd");
+    // Pattern: var x = default; for item in items: if cond: x = value; break; use(x)
+    // The assignment before break IS used after the loop exits
+    assert!(
+        !has_message(&output, "`found`"),
+        "Should NOT flag variable assigned before break in search loop.\nOutput:\n{}",
+        output
+    );
+}
+
+#[test]
+fn break_with_multiple_vars_not_flagged() {
+    let output = run_gdeye("correctness_dead_assignment.gd");
+    // Pattern: multiple vars assigned before break, all used after loop
+    assert!(
+        !has_message(&output, "`status`") || !output.contains("not_dead_break_with_multiple_vars"),
+        "Should NOT flag variables assigned before break when used after loop.\nOutput:\n{}",
+        output
+    );
+    assert!(
+        !has_message(&output, "`status_color`")
+            || !output.contains("not_dead_break_with_multiple_vars"),
+        "Should NOT flag status_color assigned before break when used after loop.\nOutput:\n{}",
         output
     );
 }

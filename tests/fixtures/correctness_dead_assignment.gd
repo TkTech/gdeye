@@ -71,6 +71,32 @@ func dead_conditional_always_overwritten():
 		value = 300  # All paths overwrite before use
 	print(value)
 
+# Should NOT warn: assignment in loop with break, value used after loop
+func not_dead_break_in_search_loop():
+	var found = false
+	var items = [1, 2, 3]
+	for item in items:
+		if item == 2:
+			found = true
+			break
+	# found is used here - either default or set in loop
+	if found:
+		print("found it")
+
+# Should NOT warn: multiple variables assigned before break, all used after loop
+func not_dead_break_with_multiple_vars():
+	var status = "installed"
+	var status_color = Color.GREEN
+	var missing_mods = [{"id": "test"}]
+	for missing in missing_mods:
+		if missing.get("id") == "test":
+			status = "missing"
+			status_color = Color.RED
+			break
+	# Both variables used after loop
+	print(status)
+	print(status_color)
+
 # Helper stubs for the tests
 var camera = null
 func is_instance_valid(_node) -> bool:

@@ -731,10 +731,8 @@ impl CfgBuilder {
                 return true;
             }
             // Recursively check pattern nodes
-            if child.kind() == "pattern" {
-                if self.is_catch_all_pattern(child, parsed) {
-                    return true;
-                }
+            if child.kind() == "pattern" && self.is_catch_all_pattern(child, parsed) {
+                return true;
             }
         }
         false
@@ -764,11 +762,14 @@ impl CfgBuilder {
         }
     }
 
-    /// Check if a block terminates (return, break, or continue).
-    /// For edge computation purposes, continue/break prevent normal flow to merge blocks.
+    /// Check if a block terminates normal control flow to merge points.
+    /// - return: exits function entirely
+    /// - continue: skips to next loop iteration (doesn't reach code after the if within the loop)
+    ///
+    /// Note: break is NOT included because it exits the loop but code AFTER the loop still executes.
     fn block_terminates(&self, block_id: usize) -> bool {
         let block = &self.blocks[block_id];
-        block.has_return || block.has_break || block.has_continue
+        block.has_return || block.has_continue
     }
 }
 

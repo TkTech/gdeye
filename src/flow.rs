@@ -509,7 +509,10 @@ func _add_beam_geometry():
     var to_camera = cam_pos.normalized()
 "#;
         let results = analyze_source(source);
-        let func_result = results.functions.get("_add_beam_geometry").expect("Should have function");
+        let func_result = results
+            .functions
+            .get("_add_beam_geometry")
+            .expect("Should have function");
 
         // cam_pos = camera.global_position should NOT be flagged as dead
         let dead_cam_pos: Vec<_> = func_result
