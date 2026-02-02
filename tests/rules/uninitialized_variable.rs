@@ -63,3 +63,60 @@ fn uninitialized_variable_count() {
         output
     );
 }
+
+#[test]
+fn match_early_return_not_flagged() {
+    let output = run_gdeye("correctness_uninitialized_variable.gd");
+    // test_match_early_return has a match with default case that returns,
+    // so `result` is always initialized when used.
+    // The function is at lines 48-59, so check that no warning appears in that range.
+    // Note: test_conditional_uninitialized at line 14 SHOULD warn about result.
+    let lines: Vec<&str> = output
+        .lines()
+        .filter(|l| {
+            l.contains("uninitialized-variable")
+                && l.contains("result")
+                && (l.contains(":58:") || l.contains(":59:"))
+        })
+        .collect();
+    assert!(
+        lines.is_empty(),
+        "Should NOT flag variable in match with early-return default case.\nMatching lines: {:?}\nOutput:\n{}",
+        lines,
+        output
+    );
+}
+
+#[test]
+fn if_early_return_not_flagged() {
+    let output = run_gdeye("correctness_uninitialized_variable.gd");
+    // test_if_early_return has if-elif-else with return in else,
+    // so `category` is always initialized when used
+    let lines: Vec<&str> = output
+        .lines()
+        .filter(|l| l.contains("uninitialized-variable") && l.contains("category"))
+        .collect();
+    assert!(
+        lines.is_empty(),
+        "Should NOT flag variable in if-elif with early-return else.\nMatching lines: {:?}\nOutput:\n{}",
+        lines,
+        output
+    );
+}
+
+#[test]
+fn loop_continue_not_flagged() {
+    let output = run_gdeye("correctness_uninitialized_variable.gd");
+    // test_loop_continue has continue in else branch,
+    // so `status` is always initialized when print is reached
+    let lines: Vec<&str> = output
+        .lines()
+        .filter(|l| l.contains("uninitialized-variable") && l.contains("status"))
+        .collect();
+    assert!(
+        lines.is_empty(),
+        "Should NOT flag variable when else branch has continue.\nMatching lines: {:?}\nOutput:\n{}",
+        lines,
+        output
+    );
+}

@@ -121,21 +121,37 @@ fn analyze_function(
         .map(|(name, _, _)| name.as_str())
         .collect();
 
+    // Count definitions per variable to determine if declarations have reassignments.
+    // A declaration is only flagged as dead if there are subsequent reassignments
+    // (meaning the initial value was overwritten before use).
+    let mut def_count: HashMap<&str, usize> = HashMap::new();
+    for block in &cfg.blocks {
+        for (var_name, _, _) in &block.definitions {
+            *def_count.entry(var_name.as_str()).or_insert(0) += 1;
+        }
+    }
+
     // Find dead assignments: a definition is dead if the variable is NOT
     // in the live-out set of the block (meaning no successor path reads it
     // without first redefining it).
-    // Skip declarations (var x = ...) since those are often forced
-    // initializations for type inference — only flag standalone reassignments.
     for block in &cfg.blocks {
         for (var_name, def_line, is_decl) in &block.definitions {
-            if *is_decl {
-                continue;
-            }
             if member_vars.contains(var_name.as_str()) {
                 continue;
             }
-            if !local_vars.contains(var_name.as_str()) {
-                continue;
+            // For declarations, only flag if there are subsequent reassignments
+            // (meaning the initial value was definitively overwritten before use).
+            // Declarations without reassignments are handled by "unused variable" warnings.
+            if *is_decl {
+                let has_reassignment = def_count.get(var_name.as_str()).copied().unwrap_or(0) > 1;
+                if !has_reassignment {
+                    continue;
+                }
+            } else {
+                // For reassignments, skip if not a local variable (could be member/inherited)
+                if !local_vars.contains(var_name.as_str()) {
+                    continue;
+                }
             }
             let block_live_out = live_out.get(&block.id);
             let is_live = block_live_out.is_some_and(|s| s.contains(var_name));
@@ -482,6 +498,70 @@ func bar():
     }
 
     #[test]
+    fn conditional_fallback_assignment_not_dead() {
+        // Pattern from WeaponVFXManager: default value + conditional override + use
+        // The conditional assignment should NOT be flagged as dead
+        let source = r#"
+func _add_beam_geometry():
+    var cam_pos = Vector3.ZERO
+    if camera and is_instance_valid(camera):
+        cam_pos = camera.global_position
+    var to_camera = cam_pos.normalized()
+"#;
+        let results = analyze_source(source);
+        let func_result = results.functions.get("_add_beam_geometry").expect("Should have function");
+
+        // cam_pos = camera.global_position should NOT be flagged as dead
+        let dead_cam_pos: Vec<_> = func_result
+            .dead_assignments
+            .iter()
+            .filter(|(name, _)| name == "cam_pos")
+            .collect();
+        assert!(
+            dead_cam_pos.is_empty(),
+            "Conditional assignment should NOT be flagged as dead: {:?}",
+            dead_cam_pos
+        );
+    }
+
+    #[test]
+    fn conditional_fallback_with_early_return_not_dead() {
+        // Exact pattern from WeaponVFXManager: early return + default + conditional override + use
+        // The conditional assignment should NOT be flagged as dead
+        let source = r#"
+func _add_beam_geometry(start, end):
+    var direction = (end - start)
+    if direction.length_squared() < 0.0001:
+        return
+    direction = direction.normalized()
+
+    var cam_pos = Vector3.ZERO
+    if camera and is_instance_valid(camera):
+        cam_pos = camera.global_position
+
+    var to_camera = (cam_pos - (start + end) * 0.5).normalized()
+    var perpendicular = direction.cross(to_camera).normalized()
+"#;
+        let results = analyze_source(source);
+        let func_result = results
+            .functions
+            .get("_add_beam_geometry")
+            .expect("Should have function");
+
+        // cam_pos = camera.global_position should NOT be flagged as dead
+        let dead_cam_pos: Vec<_> = func_result
+            .dead_assignments
+            .iter()
+            .filter(|(name, _)| name == "cam_pos")
+            .collect();
+        assert!(
+            dead_cam_pos.is_empty(),
+            "Conditional assignment should NOT be flagged as dead (with early return): {:?}",
+            dead_cam_pos
+        );
+    }
+
+    #[test]
     fn loop_variable_not_uninitialized() {
         let source = r#"
 func foo():
@@ -497,5 +577,62 @@ func foo():
             .filter(|(name, _)| name == "i")
             .count();
         assert_eq!(i_uninit, 0, "Loop variable should not be uninitialized");
+    }
+
+    #[test]
+    fn match_early_return_not_uninitialized() {
+        // Pattern: match with default case that returns early
+        // Variable should NOT be flagged as uninitialized
+        let source = r#"
+func test_match_early_return(value):
+    var result
+    match value:
+        1:
+            result = "one"
+        2:
+            result = "two"
+        _:
+            return "default"
+    print(result)
+    return result
+"#;
+        let parsed = parse_source(source).expect("Should parse");
+        let file_sym = collect_symbols(Path::new("test.gd"), &parsed);
+        let cfgs = build_cfgs(&parsed);
+
+        // Debug: print CFG structure
+        for cfg in &cfgs {
+            eprintln!("CFG for function: {}", cfg.function_name);
+            for block in &cfg.blocks {
+                eprintln!(
+                    "  Block {}: lines {}-{}, has_return={}, defs={:?}, uses={:?}",
+                    block.id,
+                    block.start_line,
+                    block.end_line,
+                    block.has_return,
+                    block.definitions,
+                    block.uses
+                );
+            }
+            eprintln!("  Edges: {:?}", cfg.edges);
+        }
+
+        let results = analyze(&cfgs, &file_sym);
+        let func_result = results
+            .functions
+            .get("test_match_early_return")
+            .expect("Should have function");
+
+        // result should NOT be flagged as uninitialized because the default case returns
+        let uninit_result: Vec<_> = func_result
+            .uninitialized_uses
+            .iter()
+            .filter(|(name, _)| name == "result")
+            .collect();
+        assert!(
+            uninit_result.is_empty(),
+            "Variable should NOT be flagged when match has early-return default: {:?}",
+            uninit_result
+        );
     }
 }

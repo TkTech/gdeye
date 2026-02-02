@@ -44,3 +44,40 @@ func test_lambda_scope():
 		var inner
 		print(inner)  # lambda has its own scope
 	cb.call()
+
+# Should NOT warn: match default case returns early, so variable is always initialized
+func test_match_early_return(value: int):
+	var result
+	match value:
+		1:
+			result = "one"
+		2:
+			result = "two"
+		_:
+			return "default"
+	print(result)
+	return result
+
+# Should NOT warn: if-elif-else with early return in else prevents uninitialized use
+func test_if_early_return(value: int):
+	var category
+	if value > 100:
+		category = "large"
+	elif value > 10:
+		category = "medium"
+	else:
+		return "tiny"
+	print(category)
+	return category
+
+# Should NOT warn: loop with continue prevents reaching the use point with uninitialized var
+func test_loop_continue():
+	for i in range(10):
+		var status
+		if i > 5:
+			status = "high"
+		elif i > 2:
+			status = "medium"
+		else:
+			continue
+		print(status)

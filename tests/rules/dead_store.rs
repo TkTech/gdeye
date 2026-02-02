@@ -131,12 +131,10 @@ fn correctness_match_genuinely_unused_variable() {
 #[test]
 fn dead_assignment_if_else_both_branches() {
     let output = run_gdeye("correctness_dead_assignment.gd");
+    // var x = 1 is dead because both if and else branches overwrite x before use
     assert!(
-        !has_message(
-            &output,
-            "Variable `x` is assigned but its value is never read"
-        ),
-        "Should NOT flag var x = 1 (declaration dead assignments are suppressed).\nOutput:\n{}",
+        has_message(&output, "`x` is never read"),
+        "Should flag var x = 1 when all branches overwrite before use.\nOutput:\n{}",
         output
     );
 }
@@ -185,9 +183,14 @@ fn dead_assignment_elif_condition_not_flagged() {
 fn dead_assignment_correct_count() {
     let output = run_gdeye("correctness_dead_assignment.gd");
     let count = count_rule(&output, "correctness/dead-store");
+    // Expected dead assignments:
+    // 1. var x = 1 in dead_in_if_else (all branches overwrite)
+    // 2. var counter = 0 in dead_reassignment (immediately overwritten)
+    // 3. counter = 1 in dead_reassignment (all branches overwrite)
+    // 4. var value = 100 in dead_conditional_always_overwritten (all branches overwrite)
     assert_eq!(
-        count, 1,
-        "Should find exactly 1 dead assignment (counter = 1 in dead_reassignment).\nOutput:\n{}",
+        count, 4,
+        "Should find exactly 4 dead assignments.\nOutput:\n{}",
         output
     );
 }
@@ -241,6 +244,44 @@ fn useless_assignment_match_then_function_call_not_flagged() {
         lines.is_empty(),
         "Should NOT flag variable assigned in match and used in print().\nMatching lines: {:?}\nOutput:\n{}",
         lines,
+        output
+    );
+}
+
+// Tests for conditional assignment fallback pattern (default + conditional override)
+
+#[test]
+fn conditional_fallback_pattern_not_flagged() {
+    let output = run_gdeye("correctness_dead_assignment.gd");
+    // Pattern: var x = default; if cond: x = other; use(x)
+    // The default value IS used when condition is false
+    assert!(
+        !has_message(&output, "`cam_pos`"),
+        "Should NOT flag conditional fallback pattern (default + optional override).\nOutput:\n{}",
+        output
+    );
+}
+
+#[test]
+fn conditional_assignment_used_not_flagged() {
+    let output = run_gdeye("correctness_dead_assignment.gd");
+    // Pattern: var x = get_value(); if x == bad: x = fallback; use(x)
+    // The initial value IS read in the condition check
+    assert!(
+        !has_message(&output, "`fleet_pos`"),
+        "Should NOT flag when initial value is read in condition.\nOutput:\n{}",
+        output
+    );
+}
+
+#[test]
+fn conditional_always_overwritten_flagged() {
+    let output = run_gdeye("correctness_dead_assignment.gd");
+    // Pattern: var x = initial; if cond: x = a else: x = b; use(x)
+    // The initial value is NEVER read - all paths overwrite
+    assert!(
+        has_message(&output, "`value`") || has_message(&output, "dead_conditional_always_overwritten"),
+        "Should flag when initial value is overwritten in all branches.\nOutput:\n{}",
         output
     );
 }

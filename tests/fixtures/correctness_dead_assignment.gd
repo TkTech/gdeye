@@ -44,3 +44,40 @@ func dead_reassignment():
 	else:
 		counter = 3
 	print(counter)
+
+# Should NOT warn: conditional assignment with default fallback pattern
+# This is a common pattern: set default, conditionally override, use result
+func not_dead_conditional_fallback():
+	var cam_pos = Vector3.ZERO
+	if camera and is_instance_valid(camera):
+		cam_pos = camera.global_position
+	# cam_pos is used here - either default or overwritten value
+	print(cam_pos)
+
+# Should NOT warn: conditional assignment where value IS used if condition is false
+func not_dead_conditional_assignment_used():
+	var fleet_pos = get_fleet_position()
+	if fleet_pos == Vector3.ZERO:
+		fleet_pos = get_fallback_position()
+	# fleet_pos is used - either original or fallback
+	print(fleet_pos)
+
+# Should warn: conditional assignment where initial value is NEVER read
+func dead_conditional_always_overwritten():
+	var value = 100  # This initial value is never read
+	if condition_a():
+		value = 200
+	else:
+		value = 300  # All paths overwrite before use
+	print(value)
+
+# Helper stubs for the tests
+var camera = null
+func is_instance_valid(_node) -> bool:
+	return true
+func get_fleet_position() -> Vector3:
+	return Vector3.ZERO
+func get_fallback_position() -> Vector3:
+	return Vector3.ONE
+func condition_a() -> bool:
+	return true

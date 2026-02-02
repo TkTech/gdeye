@@ -443,17 +443,16 @@ impl CfgBuilder {
         // For attribute access (e.g., obj.method or obj.method(args)), collect uses from
         // the object and any method call arguments, but not the attribute/method name itself.
         if node.kind() == "attribute" {
+            let first_child_start = node.child(0).map(|c| c.start_byte());
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
+                // The first child is the object being accessed - can be any expression
+                // (identifier, parenthesized_expression, binary_operator, call, etc.)
+                if Some(child.start_byte()) == first_child_start {
+                    self.collect_uses(child, parsed);
+                    continue;
+                }
                 match child.kind() {
-                    // The object being accessed - collect its uses
-                    "identifier" | "name" | "subscript" | "attribute" | "call" => {
-                        // Only collect from the first positional child (the object)
-                        if child.start_byte() == node.child(0).map(|c| c.start_byte()).unwrap_or(0)
-                        {
-                            self.collect_uses(child, parsed);
-                        }
-                    }
                     // Method call with arguments - collect uses from arguments
                     "attribute_call" => {
                         if let Some(args) = child.child_by_field_name("arguments") {
@@ -468,6 +467,8 @@ impl CfgBuilder {
                             }
                         }
                     }
+                    // Skip the attribute name (e.g., "normalized" in expr.normalized())
+                    "identifier" | "name" => {}
                     _ => {}
                 }
             }
@@ -674,6 +675,9 @@ impl CfgBuilder {
         let pre_match = self.current_block;
         let merge_block = self.new_block(node.end_position().row + 1);
 
+        // Track if we have a catch-all pattern (_, var x, etc.)
+        let mut has_catch_all = false;
+
         // Pattern sections live inside a match_body wrapper node
         let mut outer_cursor = node.walk();
         for child in node.children(&mut outer_cursor) {
@@ -681,21 +685,59 @@ impl CfgBuilder {
                 let mut inner_cursor = child.walk();
                 for section in child.children(&mut inner_cursor) {
                     if section.kind() == "pattern_section" || section.kind() == "match_branch" {
+                        if self.is_catch_all_pattern(section, parsed) {
+                            has_catch_all = true;
+                        }
                         self.process_match_branch(section, parsed, pre_match, merge_block);
                     }
                 }
             }
             // Also handle pattern_section as a direct child (grammar variations)
             if child.kind() == "pattern_section" || child.kind() == "match_branch" {
+                if self.is_catch_all_pattern(child, parsed) {
+                    has_catch_all = true;
+                }
                 self.process_match_branch(child, parsed, pre_match, merge_block);
             }
         }
 
         // GDScript match is not necessarily exhaustive, so add a fallthrough
-        // edge for the case where no pattern matches.
-        self.add_edge(pre_match, merge_block);
+        // edge for the case where no pattern matches - but only if there's
+        // no catch-all pattern like `_` or `var x`.
+        if !has_catch_all {
+            self.add_edge(pre_match, merge_block);
+        }
 
         self.current_block = merge_block;
+    }
+
+    /// Check if a pattern section contains a catch-all pattern (_, var x, etc.)
+    fn is_catch_all_pattern(&self, section: Node, parsed: &ParsedFile) -> bool {
+        let mut cursor = section.walk();
+        for child in section.children(&mut cursor) {
+            // Skip the body - we only care about the pattern itself
+            if child.kind() == "body" {
+                continue;
+            }
+            // Check for underscore pattern `_`
+            if child.kind() == "identifier" || child.kind() == "name" {
+                let text = parsed.node_text(child);
+                if text == "_" {
+                    return true;
+                }
+            }
+            // Check for binding pattern `var x` which also catches everything
+            if child.kind() == "pattern_binding" {
+                return true;
+            }
+            // Recursively check pattern nodes
+            if child.kind() == "pattern" {
+                if self.is_catch_all_pattern(child, parsed) {
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     fn process_match_branch(
@@ -722,10 +764,11 @@ impl CfgBuilder {
         }
     }
 
-    /// Check if a block terminates (return only - assert just pauses in debug).
+    /// Check if a block terminates (return, break, or continue).
+    /// For edge computation purposes, continue/break prevent normal flow to merge blocks.
     fn block_terminates(&self, block_id: usize) -> bool {
         let block = &self.blocks[block_id];
-        block.has_return
+        block.has_return || block.has_break || block.has_continue
     }
 }
 
