@@ -467,6 +467,16 @@ impl CfgBuilder {
                             }
                         }
                     }
+                    // Subscript access (e.g., obj.array[i]) - collect uses from subscript arguments
+                    "attribute_subscript" => {
+                        let mut inner_cursor = child.walk();
+                        for inner in child.children(&mut inner_cursor) {
+                            // Skip the attribute name, but collect from subscript_arguments
+                            if inner.kind() != "identifier" && inner.kind() != "name" {
+                                self.collect_uses(inner, parsed);
+                            }
+                        }
+                    }
                     // Skip the attribute name (e.g., "normalized" in expr.normalized())
                     "identifier" | "name" => {}
                     _ => {}
@@ -614,20 +624,54 @@ impl CfgBuilder {
 
         let pre_loop = self.current_block;
         let loop_body = self.new_block(node.start_position().row + 1);
-        let after_loop = self.new_block(node.end_position().row + 1);
 
         self.add_edge(pre_loop, loop_body);
-        self.add_edge(pre_loop, after_loop); // loop might not execute
 
+        // Process the loop body BEFORE creating after_loop so all body blocks
+        // have IDs less than after_loop
         self.current_block = loop_body;
         if let Some(body) = node.child_by_field_name("body") {
             self.process_statements(body, parsed);
         }
 
-        // Back edge
-        if !self.block_terminates(self.current_block) {
-            self.add_edge(self.current_block, loop_body);
-            self.add_edge(self.current_block, after_loop);
+        // Save the last block of the loop body
+        let last_body_block = self.current_block;
+
+        // NOW create after_loop - it will have an ID after all body blocks
+        let after_loop = self.new_block(node.end_position().row + 1);
+
+        // Loop might not execute at all
+        self.add_edge(pre_loop, after_loop);
+
+        // All blocks from loop_body to after_loop (exclusive) are loop body blocks.
+        // Add appropriate edges for continue/break in ANY of these blocks.
+        let body_block_flags: Vec<(usize, bool, bool, bool)> = (loop_body..after_loop)
+            .map(|id| {
+                let b = &self.blocks[id];
+                (id, b.has_continue, b.has_break, b.has_return)
+            })
+            .collect();
+
+        for (block_id, has_continue, has_break, _has_return) in body_block_flags {
+            if has_continue {
+                // Continue goes back to loop header
+                self.add_edge(block_id, loop_body);
+            }
+            if has_break {
+                // Break exits loop
+                self.add_edge(block_id, after_loop);
+            }
+        }
+
+        // Handle the final block of the loop body (normal flow)
+        let (has_return, has_continue, has_break) = {
+            let block = &self.blocks[last_body_block];
+            (block.has_return, block.has_continue, block.has_break)
+        };
+        if !has_return && !has_continue && !has_break {
+            // Normal flow: back edge and exit edge
+            self.add_edge(last_body_block, loop_body);
+            self.add_edge(last_body_block, after_loop);
         }
 
         self.current_block = after_loop;
@@ -637,7 +681,6 @@ impl CfgBuilder {
         let pre_loop = self.current_block;
         let cond_block = self.new_block(node.start_position().row + 1);
         let loop_body = self.new_block(node.start_position().row + 1);
-        let after_loop = self.new_block(node.end_position().row + 1);
 
         // Collect uses from the condition in the condition block
         self.current_block = cond_block;
@@ -647,16 +690,51 @@ impl CfgBuilder {
 
         self.add_edge(pre_loop, cond_block);
         self.add_edge(cond_block, loop_body);
-        self.add_edge(cond_block, after_loop);
 
+        // Process the loop body BEFORE creating after_loop so all body blocks
+        // have IDs less than after_loop
         self.current_block = loop_body;
         if let Some(body) = node.child_by_field_name("body") {
             self.process_statements(body, parsed);
         }
 
-        // Back edge to condition
-        if !self.block_terminates(self.current_block) {
-            self.add_edge(self.current_block, cond_block);
+        // Save the last block of the loop body
+        let last_body_block = self.current_block;
+
+        // NOW create after_loop - it will have an ID after all body blocks
+        let after_loop = self.new_block(node.end_position().row + 1);
+
+        // Condition can skip the loop
+        self.add_edge(cond_block, after_loop);
+
+        // All blocks from loop_body to after_loop (exclusive) are loop body blocks.
+        // Add appropriate edges for continue/break in ANY of these blocks.
+        let body_block_flags: Vec<(usize, bool, bool, bool)> = (loop_body..after_loop)
+            .map(|id| {
+                let b = &self.blocks[id];
+                (id, b.has_continue, b.has_break, b.has_return)
+            })
+            .collect();
+
+        for (block_id, has_continue, has_break, _has_return) in body_block_flags {
+            if has_continue {
+                // Continue goes back to loop condition
+                self.add_edge(block_id, cond_block);
+            }
+            if has_break {
+                // Break exits loop
+                self.add_edge(block_id, after_loop);
+            }
+        }
+
+        // Handle the final block of the loop body (normal flow)
+        let (has_return, has_continue, has_break) = {
+            let block = &self.blocks[last_body_block];
+            (block.has_return, block.has_continue, block.has_break)
+        };
+        if !has_return && !has_continue && !has_break {
+            // Normal flow: back to condition
+            self.add_edge(last_body_block, cond_block);
         }
 
         self.current_block = after_loop;

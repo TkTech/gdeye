@@ -97,6 +97,28 @@ func not_dead_break_with_multiple_vars():
 	print(status)
 	print(status_color)
 
+# Should NOT warn: loop variable used in attribute subscript (obj.array[i])
+func not_dead_loop_var_in_subscript():
+	var triangles = []
+	var st = SurfaceTool.new()
+	for tri in triangles:
+		for i in 3:
+			st.set_normal(tri.normals[i])
+			st.set_uv(tri.uvs[i])
+			st.add_vertex(tri.vertices[i])
+
+# Should NOT warn: variable assigned in loop with continue, used after loop
+func not_dead_continue_in_loop():
+	var items = [1, 2, 3]
+	var found_item = null
+	for item in items:
+		if item != 2:
+			continue
+		found_item = item
+	# found_item may have been set during the loop
+	if found_item:
+		print(found_item)
+
 # Helper stubs for the tests
 var camera = null
 func is_instance_valid(_node) -> bool:

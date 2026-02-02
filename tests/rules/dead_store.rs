@@ -317,3 +317,39 @@ fn break_with_multiple_vars_not_flagged() {
         output
     );
 }
+
+#[test]
+fn loop_var_in_attribute_subscript_not_flagged() {
+    let output = run_gdeye("correctness_dead_assignment.gd");
+    // Pattern: for i in 3: obj.array[i] - loop var used in attribute subscript
+    // The subscript_arguments inside attribute_subscript must be recursed into
+    let lines: Vec<&str> = output
+        .lines()
+        .filter(|l| {
+            l.contains("dead-store") && l.contains("`i`") && l.contains("not_dead_loop_var")
+        })
+        .collect();
+    assert!(
+        lines.is_empty(),
+        "Should NOT flag loop variable used in attribute subscript.\nMatching lines: {:?}\nOutput:\n{}",
+        lines,
+        output
+    );
+}
+
+#[test]
+fn continue_in_loop_not_flagged() {
+    let output = run_gdeye("correctness_dead_assignment.gd");
+    // Pattern: var x; for item in items: if cond: continue; x = item; use(x)
+    // The assignment before the loop ends can be used after the loop
+    let lines: Vec<&str> = output
+        .lines()
+        .filter(|l| l.contains("dead-store") && l.contains("`found_item`"))
+        .collect();
+    assert!(
+        lines.is_empty(),
+        "Should NOT flag variable assigned in loop with continue.\nMatching lines: {:?}\nOutput:\n{}",
+        lines,
+        output
+    );
+}
