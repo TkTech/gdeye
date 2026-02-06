@@ -552,4 +552,20 @@ mod tests {
             result.output
         );
     }
+
+    #[test]
+    fn format_abstract_bodyless_function() {
+        let src = "@abstract\nfunc host_game(_config: Dictionary) -> String\n";
+        let result = format_source(src, &FmtConfig::default()).unwrap();
+        assert!(
+            !result.output.contains("String:"),
+            "bodyless function should not get a colon: {}",
+            result.output
+        );
+        assert!(
+            result.output.contains("@abstract\nfunc"),
+            "annotation should stay attached to its function: {}",
+            result.output
+        );
+    }
 }

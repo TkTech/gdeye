@@ -253,6 +253,8 @@ fn format_source_node(
 /// Determine how many blank lines to insert between two top-level declaration kinds.
 fn blank_lines_between(prev: &str, next: &str, config: &FmtConfig) -> usize {
     match (prev, next) {
+        // Don't insert blank lines between an annotation and its target.
+        ("annotation", _) => 0,
         // Two blank lines before/after functions and classes at top level (capped by config).
         (_, "function_definition") | (_, "class_definition") => config.max_blank_lines,
         ("function_definition", _) | ("class_definition", _) => config.max_blank_lines,
@@ -333,18 +335,34 @@ fn format_function_def(
         }
     }
 
-    parts.push(text(":"));
-
-    // Trailing comment after the colon (e.g., `func foo():  # comment`)
-    if let Some(tc) = comments.take_trailing(last_end_byte, last_end_row) {
-        parts.push(line_suffix(text(format!(" {}", tc.text))));
-    }
-
-    // Body
+    // Body — only emit colon if the function has a body (abstract functions are bodyless).
+    let mut has_body = false;
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if child.kind() == "body" {
-            parts.push(format_body(child, src, comments, config));
+            has_body = true;
+            break;
+        }
+    }
+
+    if has_body {
+        parts.push(text(":"));
+
+        // Trailing comment after the colon (e.g., `func foo():  # comment`)
+        if let Some(tc) = comments.take_trailing(last_end_byte, last_end_row) {
+            parts.push(line_suffix(text(format!(" {}", tc.text))));
+        }
+
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            if child.kind() == "body" {
+                parts.push(format_body(child, src, comments, config));
+            }
+        }
+    } else {
+        // Trailing comment on bodyless function (e.g., `func foo() -> void  # comment`)
+        if let Some(tc) = comments.take_trailing(last_end_byte, last_end_row) {
+            parts.push(line_suffix(text(format!(" {}", tc.text))));
         }
     }
 
@@ -456,6 +474,8 @@ fn format_class_body(
 /// Blank lines between class body members.
 fn class_blank_lines(prev: &str, next: &str) -> usize {
     match (prev, next) {
+        // Don't insert blank lines between an annotation and its target.
+        ("annotation", _) => 0,
         (_, "function_definition") | ("function_definition", _) => 1,
         _ => 0,
     }
