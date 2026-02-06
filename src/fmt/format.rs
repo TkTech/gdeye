@@ -1062,9 +1062,13 @@ fn format_for_stmt(node: Node, src: &str, comments: &mut CommentStore, config: &
             continue;
         } else if !var_done {
             parts.push(format_node(child, src, comments, config));
-            parts.push(text(" in "));
             var_done = true;
+        } else if child.kind() == "type" {
+            // Typed for-loop: `for obj: Type in iterable:`
+            parts.push(text(": "));
+            parts.push(text(node_text(child, src)));
         } else if !iterable_done {
+            parts.push(text(" in "));
             parts.push(format_node(child, src, comments, config));
             iter_end_byte = child.end_byte();
             iter_end_row = child.end_position().row;

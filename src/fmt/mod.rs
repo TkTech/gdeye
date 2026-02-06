@@ -568,4 +568,17 @@ mod tests {
             result.output
         );
     }
+
+    #[test]
+    fn format_typed_for_loop_preserves_type_and_iterable() {
+        let src = "func foo():\n\tfor obj: Fleet3D in get_selected_of_type(Fleet3D):\n\t\tpass\n";
+        let result = format_source(src, &FmtConfig::default()).unwrap();
+        assert!(
+            result
+                .output
+                .contains("obj: Fleet3D in get_selected_of_type(Fleet3D)"),
+            "typed for-loop should preserve type annotation and iterable: {}",
+            result.output
+        );
+    }
 }
