@@ -1042,38 +1042,34 @@ fn format_for_stmt(node: Node, src: &str, comments: &mut CommentStore, config: &
     let mut parts: Vec<Doc> = Vec::new();
     parts.push(text("for "));
 
-    let mut cursor = node.walk();
-    let mut var_done = false;
-    let mut iterable_done = false;
+    // Variable (field: left)
+    if let Some(left) = node.child_by_field_name("left") {
+        parts.push(format_node(left, src, comments, config));
+    }
+
+    // Optional type annotation (field: type)
+    if let Some(type_node) = node.child_by_field_name("type") {
+        parts.push(text(": "));
+        parts.push(text(node_text(type_node, src)));
+    }
+
+    // Iterable (field: right)
     let mut iter_end_byte: usize = 0;
     let mut iter_end_row: usize = 0;
+    if let Some(right) = node.child_by_field_name("right") {
+        parts.push(text(" in "));
+        parts.push(format_node(right, src, comments, config));
+        iter_end_byte = right.end_byte();
+        iter_end_row = right.end_position().row;
+    }
 
-    for child in node.children(&mut cursor) {
-        if child.kind() == "comment" {
-            continue;
+    // Body (field: body)
+    if let Some(body) = node.child_by_field_name("body") {
+        parts.push(text(":"));
+        if let Some(tc) = comments.take_trailing(iter_end_byte, iter_end_row) {
+            parts.push(line_suffix(text(format!(" {}", tc.text))));
         }
-        if child.kind() == "body" {
-            parts.push(text(":"));
-            if let Some(tc) = comments.take_trailing(iter_end_byte, iter_end_row) {
-                parts.push(line_suffix(text(format!(" {}", tc.text))));
-            }
-            parts.push(format_body(child, src, comments, config));
-        } else if !child.is_named() {
-            continue;
-        } else if !var_done {
-            parts.push(format_node(child, src, comments, config));
-            var_done = true;
-        } else if child.kind() == "type" {
-            // Typed for-loop: `for obj: Type in iterable:`
-            parts.push(text(": "));
-            parts.push(text(node_text(child, src)));
-        } else if !iterable_done {
-            parts.push(text(" in "));
-            parts.push(format_node(child, src, comments, config));
-            iter_end_byte = child.end_byte();
-            iter_end_row = child.end_position().row;
-            iterable_done = true;
-        }
+        parts.push(format_body(body, src, comments, config));
     }
 
     concat(parts)
