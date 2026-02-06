@@ -531,4 +531,25 @@ mod tests {
         assert!(result.output.contains("arr[0]"));
         assert!(result.output.contains("data[a + b]"));
     }
+
+    #[test]
+    fn format_inner_class_preserves_body() {
+        let src = "class Inner extends RefCounted:\n\tvar x: int\n\n\tfunc _init(p_x: int) -> void:\n\t\tx = p_x\n";
+        let result = format_source(src, &FmtConfig::default()).unwrap();
+        assert!(
+            result.output.contains("var x: int"),
+            "inner class body should be preserved: {}",
+            result.output
+        );
+        assert!(
+            result.output.contains("func _init"),
+            "inner class methods should be preserved: {}",
+            result.output
+        );
+        assert!(
+            result.output.contains("x = p_x"),
+            "inner class method bodies should be preserved: {}",
+            result.output
+        );
+    }
 }

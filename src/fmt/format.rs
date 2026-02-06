@@ -374,10 +374,10 @@ fn format_class_def(node: Node, src: &str, comments: &mut CommentStore, config: 
 
     parts.push(text(":"));
 
-    // Body
+    // Body (inner classes use "class_body", top-level classes use "body")
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        if child.kind() == "body" {
+        if child.kind() == "body" || child.kind() == "class_body" {
             parts.push(format_class_body(child, src, comments, config));
         }
     }
