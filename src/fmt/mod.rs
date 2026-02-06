@@ -512,4 +512,23 @@ mod tests {
             "func foo():\n\tpass\n\nfunc bar():\n\tpass\n"
         );
     }
+
+    #[test]
+    fn format_subscript_no_double_brackets() {
+        let src = "func foo():\n\tvar x = dict[key]\n\tvar y = arr[0]\n\tvar z = data[a + b]\n\tdict[key] = 42\n";
+        let result = format_source(src, &FmtConfig::default()).unwrap();
+        assert!(
+            !result.output.contains("[["),
+            "subscript should not produce double brackets: {}",
+            result.output
+        );
+        assert!(
+            !result.output.contains("]]"),
+            "subscript should not produce double brackets: {}",
+            result.output
+        );
+        assert!(result.output.contains("dict[key]"));
+        assert!(result.output.contains("arr[0]"));
+        assert!(result.output.contains("data[a + b]"));
+    }
 }

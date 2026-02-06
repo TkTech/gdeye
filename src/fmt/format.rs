@@ -2009,9 +2009,24 @@ fn format_subscript(node: Node, src: &str, comments: &mut CommentStore, config: 
 
     if named_children.len() >= 2 {
         parts.push(format_node(named_children[0], src, comments, config));
-        parts.push(text("["));
-        parts.push(format_node(named_children[1], src, comments, config));
-        parts.push(text("]"));
+        // named_children[1] is `subscript_arguments` which includes brackets in its text.
+        // Format its inner named child (the index expression) and wrap in our own brackets.
+        let subscript_args = named_children[1];
+        let inner: Vec<Node> = {
+            let mut cursor = subscript_args.walk();
+            subscript_args
+                .children(&mut cursor)
+                .filter(|c| c.is_named())
+                .collect()
+        };
+        if inner.len() == 1 {
+            parts.push(text("["));
+            parts.push(format_node(inner[0], src, comments, config));
+            parts.push(text("]"));
+        } else {
+            // Fallback: emit the subscript_arguments as-is (already has brackets)
+            parts.push(text(node_text(subscript_args, src)));
+        }
     } else {
         parts.push(text(node_text(node, src)));
     }
