@@ -100,7 +100,30 @@ var z = 5
 var w = 5
 ```
 
-## Building
+## Installation
+
+### From Github
+
+Download a prebuilt binary from the
+[latest release](https://github.com/TkTech/gdeye/releases/latest), extract it,
+and place it somewhere on your `PATH`. Available for OS X, Windows, and Linux.
+
+### From crates.io
+
+```sh
+cargo install gdeye
+```
+
+### Building from source
+
+Checkout the repo:
+
+```sh
+git clone https://github.com/TkTech/gdeye.git
+```
+
+Then build it:
+
 
 ```sh
 cargo build --release
