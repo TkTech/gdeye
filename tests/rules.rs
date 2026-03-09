@@ -66,6 +66,8 @@ mod unreachable_code;
 mod untyped_parameter;
 #[path = "rules/untyped_return.rs"]
 mod untyped_return;
+#[path = "rules/untyped_variable.rs"]
+mod untyped_variable;
 #[path = "rules/unused_function.rs"]
 mod unused_function;
 #[path = "rules/unused_parameter.rs"]

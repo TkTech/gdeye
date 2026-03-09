@@ -7,6 +7,7 @@ mod standalone_expression;
 mod unnecessary_pass;
 mod untyped_parameter;
 mod untyped_return;
+mod untyped_variable;
 
 pub use excessive_nesting::ExcessiveNesting;
 pub use function_too_long::FunctionTooLong;
@@ -17,3 +18,4 @@ pub use standalone_expression::StandaloneExpression;
 pub use unnecessary_pass::UnnecessaryPass;
 pub use untyped_parameter::UntypedParameter;
 pub use untyped_return::UntypedReturn;
+pub use untyped_variable::UntypedVariable;

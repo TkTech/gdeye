@@ -41,3 +41,19 @@ func no_return():
 # With return type (should not flag)
 func with_return() -> void:
 	pass
+
+# Untyped variable with known initializer type
+var untyped_dict = {}
+var untyped_array = []
+var untyped_int = 42
+
+# Typed variable (should not flag)
+var typed_var: int = 10
+
+# Inferred type variable (should not flag)
+var inferred_var := 10
+
+# Untyped local variable
+func has_untyped_local() -> void:
+	var local_dict = {}
+	print(local_dict)

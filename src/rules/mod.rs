@@ -250,6 +250,7 @@ pub fn all_rules() -> Vec<Box<dyn Rule>> {
         Box::new(style::StandaloneExpression),
         Box::new(style::NoElseReturn),
         Box::new(style::OnreadyHoist),
+        Box::new(style::UntypedVariable),
     ]
 }
 
