@@ -245,8 +245,58 @@ fn get_var_name<'a>(parsed: &'a ParsedFile, stmt: tree_sitter::Node) -> Option<&
     None
 }
 
+/// Collect all names that a node variable is assigned to (aliases).
+/// For example, if `belt` is created and later `asteroid_mesh = belt`,
+/// then `asteroid_mesh` is an alias and sinks for it count too.
+fn collect_aliases<'a>(
+    parsed: &'a ParsedFile,
+    var_name: &str,
+    remaining: &[tree_sitter::Node],
+) -> Vec<&'a str> {
+    let mut aliases = Vec::new();
+    for stmt in remaining {
+        let assignments = parser::find_nodes_by_kind(*stmt, "assignment");
+        for assign in assignments {
+            let mut cursor = assign.walk();
+            let children: Vec<_> = assign.children(&mut cursor).collect();
+            if children.len() >= 3 {
+                let rhs = children.last().unwrap();
+                if rhs.kind() == "identifier" && parsed.node_text(*rhs) == var_name {
+                    let lhs = children[0];
+                    let lhs_text = parsed.node_text(lhs);
+                    // Track both simple identifiers and member assignments
+                    if lhs.kind() == "identifier" {
+                        aliases.push(lhs_text);
+                    }
+                }
+            }
+        }
+    }
+    aliases
+}
+
 /// Check if remaining statements contain a "sink" for the variable.
 fn has_sink(parsed: &ParsedFile, var_name: &str, remaining: &[tree_sitter::Node]) -> bool {
+    // Collect aliases (other variables this node is assigned to)
+    let aliases = collect_aliases(parsed, var_name, remaining);
+
+    // Check sinks for the original name and all aliases
+    let mut names_to_check = vec![var_name];
+    for alias in &aliases {
+        names_to_check.push(alias);
+    }
+
+    for name in &names_to_check {
+        if has_sink_for_name(parsed, name, remaining) {
+            return true;
+        }
+    }
+
+    false
+}
+
+/// Check if remaining statements contain a "sink" for a specific name.
+fn has_sink_for_name(parsed: &ParsedFile, var_name: &str, remaining: &[tree_sitter::Node]) -> bool {
     for stmt in remaining {
         // Check for add_child(var), add_sibling(var), etc. by looking for identifier nodes
         if has_identifier_as_arg(parsed, *stmt, var_name, SINK_METHODS) {

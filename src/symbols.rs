@@ -126,6 +126,8 @@ pub struct FuncDecl {
     pub name_end_byte: usize,
     /// Documentation comment (if any) preceding this function.
     pub documentation: Option<String>,
+    /// Whether this is a `static func`.
+    pub is_static: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -668,6 +670,15 @@ fn extract_function(node: Node, parsed: &ParsedFile) -> Option<FuncDecl> {
 
     let documentation = extract_documentation(node, parsed);
 
+    // Check for static keyword child
+    let is_static = {
+        let mut cursor = node.walk();
+        let result = node
+            .children(&mut cursor)
+            .any(|c| c.kind() == "static_keyword");
+        result
+    };
+
     let mut parameters = Vec::new();
     if let Some(params_node) = node.child_by_field_name("parameters") {
         let mut cursor = params_node.walk();
@@ -796,6 +807,7 @@ fn extract_function(node: Node, parsed: &ParsedFile) -> Option<FuncDecl> {
         name_start_byte: name_start,
         name_end_byte: name_end,
         documentation,
+        is_static,
     })
 }
 

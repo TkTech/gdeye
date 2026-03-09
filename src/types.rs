@@ -1802,6 +1802,7 @@ mod tests {
                 name_start_byte: 5,
                 name_end_byte: 12,
                 documentation: None,
+                is_static: false,
             }],
             inner_classes: vec![],
             parent_file: None,

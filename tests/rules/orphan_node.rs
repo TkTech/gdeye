@@ -37,3 +37,33 @@ fn orphan_node_count() {
         output
     );
 }
+
+#[test]
+fn orphan_node_alias_not_flagged() {
+    let output = run_rule("correctness_orphan_node.gd", &["correctness/orphan-node"]);
+    // Node assigned to another variable then added via that alias
+    let lines: Vec<&str> = output
+        .lines()
+        .filter(|l| l.contains("orphan-node") && l.contains("test_assigned_then_added"))
+        .collect();
+    assert!(
+        lines.is_empty(),
+        "Should NOT flag node added via alias variable.\nOutput:\n{}",
+        output
+    );
+}
+
+#[test]
+fn orphan_node_member_alias_not_flagged() {
+    let output = run_rule("correctness_orphan_node.gd", &["correctness/orphan-node"]);
+    // Node assigned to member field then added via that field
+    let lines: Vec<&str> = output
+        .lines()
+        .filter(|l| l.contains("orphan-node") && l.contains("test_assigned_to_member"))
+        .collect();
+    assert!(
+        lines.is_empty(),
+        "Should NOT flag node added via member field alias.\nOutput:\n{}",
+        output
+    );
+}

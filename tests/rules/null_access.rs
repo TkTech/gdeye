@@ -11,11 +11,13 @@ fn chained_null_access() {
 }
 
 #[test]
-fn dollar_null_access() {
+fn dollar_access_not_flagged() {
     let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
+    // $ is sugar for get_node() which throws on missing nodes, never returns null.
+    // Only get_node_or_null() returns null.
     assert!(
-        has_message(&output, "node access can return null"),
-        "Should detect $ null access.\nOutput:\n{}",
+        !has_message(&output, "node access can return null"),
+        "Should NOT flag $ access (get_node throws, doesn't return null).\nOutput:\n{}",
         output
     );
 }
@@ -24,28 +26,11 @@ fn dollar_null_access() {
 fn null_access_count() {
     let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
     let count = count_rule(&output, "correctness/null-access");
-    // Should flag: test_chained (3), test_dollar (2)
-    // Should NOT flag: test_safe, test_guarded_*, etc.
-    assert!(
-        count >= 3,
-        "Expected at least 3 null-access warnings. Got {}.\nOutput:\n{}",
-        count,
-        output
-    );
-}
-
-#[test]
-fn guarded_access_not_flagged() {
-    let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
-    // Count warnings - guarded accesses should reduce total
-    let count = count_rule(&output, "correctness/null-access");
-    // The guarded functions test_guarded_dollar, test_guarded_has_node,
-    // test_guarded_is_instance_valid, test_guarded_null_comparison, test_guarded_boolean_and
-    // should NOT add any warnings (their accesses are protected by if guards)
-    // Only test_chained (3) and test_dollar (2) should be flagged = 5 total
-    assert!(
-        count <= 6,
-        "Expected at most 6 null-access warnings (guarded accesses shouldn't be flagged). Got {}.\nOutput:\n{}",
+    // Should flag: test_chained (3) only
+    // Should NOT flag: test_dollar, test_safe, test_guarded_*, etc.
+    assert_eq!(
+        count, 3,
+        "Expected exactly 3 null-access warnings (chained calls only). Got {}.\nOutput:\n{}",
         count,
         output
     );

@@ -36,7 +36,6 @@ impl Rule for NullAccess {
     fn check(&self, ctx: &RuleContext) -> Vec<Diagnostic> {
         let mut diagnostics = Vec::new();
         check_chained_null_access(ctx.parsed, &mut diagnostics);
-        check_dollar_null_access(ctx.parsed, &mut diagnostics);
         diagnostics
     }
 }
@@ -89,52 +88,6 @@ fn check_chained_null_access(parsed: &ParsedFile, diagnostics: &mut Vec<Diagnost
                      Consider assigning to a variable and checking for null first.",
                     func_name
                 ),
-                attr.start_position().row + 1,
-            )
-            .span(
-                attr.start_position().column,
-                attr.end_position().row + 1,
-                attr.end_position().column,
-            ),
-        );
-    }
-}
-
-/// Check for member access on $ shorthand (dollar sign node access).
-fn check_dollar_null_access(parsed: &ParsedFile, diagnostics: &mut Vec<Diagnostic>) {
-    let root = parsed.root_node();
-    let attrs = parser::find_nodes_by_kind(root, "attribute");
-
-    for attr in attrs {
-        let mut cursor = attr.walk();
-        let children: Vec<_> = attr.children(&mut cursor).collect();
-
-        if children.len() < 2 {
-            continue;
-        }
-
-        let receiver = children[0];
-
-        // Check if receiver is a get_node shorthand ($Path)
-        if receiver.kind() != "get_node" {
-            continue;
-        }
-
-        // Get the guard key (e.g., "$Child" or "$Path/To/Node")
-        let guard_key = get_guard_key(parsed, receiver);
-
-        // Skip if inside a guard (if $Node:, if has_node("Node"):, etc.)
-        if is_inside_guard(attr, parsed, &guard_key) {
-            continue;
-        }
-
-        diagnostics.push(
-            Diagnostic::new(
-                RULE_ID,
-                Severity::Warning,
-                "Potential null reference: `$` node access can return null if the node doesn't exist. \
-                 Consider using `get_node_or_null()` with a null check."
-                    .to_string(),
                 attr.start_position().row + 1,
             )
             .span(

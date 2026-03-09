@@ -41,7 +41,9 @@ fn check_shadowed_variables(file_sym: &FileSymbols, diagnostics: &mut Vec<Diagno
                 continue;
             }
 
-            if member_names.contains(&var.name.as_str()) {
+            // Static functions cannot access self, so locals cannot
+            // meaningfully shadow member variables.
+            if !func.is_static && member_names.contains(&var.name.as_str()) {
                 diagnostics.push(Diagnostic::new(
                     RULE_ID,
                     Severity::Warning,

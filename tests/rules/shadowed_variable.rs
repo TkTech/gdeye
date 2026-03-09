@@ -39,3 +39,21 @@ fn shadowed_variable_correct_count() {
         output
     );
 }
+
+#[test]
+fn shadowed_variable_static_func_not_flagged() {
+    let output = run_rule(
+        "correctness_shadowed_variable.gd",
+        &["correctness/shadowed-variable"],
+    );
+    // Static functions cannot access self, so locals cannot shadow members
+    let lines: Vec<&str> = output
+        .lines()
+        .filter(|l| l.contains("shadowed-variable") && l.contains("static_no_shadow"))
+        .collect();
+    assert!(
+        lines.is_empty(),
+        "Should NOT flag locals in static func as shadowing members.\nLines:\n{:?}",
+        lines
+    );
+}

@@ -437,5 +437,6 @@ fn create_placeholder_func(name: &str) -> crate::symbols::FuncDecl {
         name_start_byte: 0,
         name_end_byte: 0,
         documentation: None,
+        is_static: false,
     }
 }

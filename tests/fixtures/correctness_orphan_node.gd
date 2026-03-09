@@ -21,3 +21,13 @@ func test_passed():
 
 func setup_node(_n):
 	pass
+
+func test_assigned_then_added():
+	var node = Node3D.new()
+	var other = node
+	add_child(other)  # node is added via alias
+
+func test_assigned_to_member_field():
+	var node = Node3D.new()
+	asteroid_mesh = node
+	add_child(asteroid_mesh)  # node added via member field alias
