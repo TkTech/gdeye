@@ -2,7 +2,7 @@ use crate::common::*;
 
 #[test]
 fn style_untyped_variable_flags_untyped() {
-    let output = run_gdeye_style("style_rules.gd");
+    let output = run_rule("style_rules.gd", &["style/untyped-variable"]);
     let lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("untyped-variable"))
@@ -26,7 +26,7 @@ fn style_untyped_variable_flags_untyped() {
 
 #[test]
 fn style_untyped_variable_skips_typed() {
-    let output = run_gdeye_style("style_rules.gd");
+    let output = run_rule("style_rules.gd", &["style/untyped-variable"]);
     let lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("untyped-variable"))
@@ -45,7 +45,7 @@ fn style_untyped_variable_skips_typed() {
 
 #[test]
 fn style_untyped_variable_flags_local() {
-    let output = run_gdeye_style("style_rules.gd");
+    let output = run_rule("style_rules.gd", &["style/untyped-variable"]);
     let lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("untyped-variable"))

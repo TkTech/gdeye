@@ -2,7 +2,10 @@ use crate::common::*;
 
 #[test]
 fn unreachable_after_return() {
-    let output = run_gdeye("correctness_unreachable_code.gd");
+    let output = run_rule(
+        "correctness_unreachable_code.gd",
+        &["correctness/unreachable-code"],
+    );
     assert!(
         has_message(&output, "Unreachable code"),
         "Should detect unreachable code after return.\nOutput:\n{}",
@@ -12,7 +15,10 @@ fn unreachable_after_return() {
 
 #[test]
 fn unreachable_correct_count() {
-    let output = run_gdeye("correctness_unreachable_code.gd");
+    let output = run_rule(
+        "correctness_unreachable_code.gd",
+        &["correctness/unreachable-code"],
+    );
     let count = count_rule(&output, "correctness/unreachable-code");
     assert_eq!(
         count, 4,
@@ -23,7 +29,11 @@ fn unreachable_correct_count() {
 
 #[test]
 fn unreachable_not_flagged_conditional_return() {
-    let output = run_gdeye_stdout("correctness_unreachable_code.gd", &["--format", "json"]);
+    let output = run_rule_stdout(
+        "correctness_unreachable_code.gd",
+        "correctness/unreachable-code",
+        &["--format", "json"],
+    );
     let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
     let results = parsed.as_array().unwrap();
     for r in results {

@@ -2,7 +2,10 @@ use crate::common::*;
 
 #[test]
 fn self_assignment_detected() {
-    let output = run_gdeye("correctness_self_assignment.gd");
+    let output = run_rule(
+        "correctness_self_assignment.gd",
+        &["correctness/self-assignment"],
+    );
     assert!(
         has_message(&output, "Self-assignment"),
         "Should detect self-assignment.\nOutput:\n{}",
@@ -12,7 +15,10 @@ fn self_assignment_detected() {
 
 #[test]
 fn self_assignment_count() {
-    let output = run_gdeye("correctness_self_assignment.gd");
+    let output = run_rule(
+        "correctness_self_assignment.gd",
+        &["correctness/self-assignment"],
+    );
     let count = count_rule(&output, "correctness/self-assignment");
     assert!(
         count >= 2,
@@ -23,7 +29,10 @@ fn self_assignment_count() {
 
 #[test]
 fn augmented_assignment_not_flagged() {
-    let output = run_gdeye("correctness_self_assignment.gd");
+    let output = run_rule(
+        "correctness_self_assignment.gd",
+        &["correctness/self-assignment"],
+    );
     // += and -= should not be flagged
     assert!(
         !has_message(&output, "augmented"),

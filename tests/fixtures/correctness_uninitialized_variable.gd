@@ -81,3 +81,27 @@ func test_loop_continue():
 		else:
 			continue
 		print(status)
+
+# Should NOT warn: guard flag ensures variable is always initialized before use.
+# First iteration: flag is false, so the variable gets assigned and flag becomes true.
+# Subsequent iterations: flag is true, so assignment is skipped, but variable is
+# already initialized from the first iteration.
+func test_loop_guard_flag():
+	var cached_value
+	var is_loaded = false
+	for item in [1, 2, 3]:
+		if not is_loaded:
+			cached_value = item * 10
+			is_loaded = true
+		print(cached_value)
+
+# Should NOT warn: same immutable condition guards both assignment and use.
+# If the condition is true, the variable is assigned and later used.
+# If the condition is false, neither the assignment nor the use is reached.
+func test_correlated_condition(flag: bool):
+	var special_value
+	if flag:
+		special_value = 42
+	var other = 0
+	if flag:
+		print(special_value)

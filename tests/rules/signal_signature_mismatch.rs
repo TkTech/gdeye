@@ -2,7 +2,10 @@ use crate::common::*;
 
 #[test]
 fn signal_mismatch_wrong_param_count() {
-    let output = run_gdeye("signal_mismatch_project");
+    let output = run_rule(
+        "signal_mismatch_project",
+        &["correctness/signal-signature-mismatch"],
+    );
     assert!(
         has_message(&output, "signal-signature-mismatch"),
         "Should flag handler with wrong parameter count.\nOutput:\n{}",
@@ -17,7 +20,10 @@ fn signal_mismatch_wrong_param_count() {
 
 #[test]
 fn signal_mismatch_correct_not_flagged() {
-    let output = run_gdeye("signal_mismatch_project");
+    let output = run_rule(
+        "signal_mismatch_project",
+        &["correctness/signal-signature-mismatch"],
+    );
     let mismatch_lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("signal-signature-mismatch"))
@@ -37,7 +43,10 @@ fn signal_mismatch_correct_not_flagged() {
 
 #[test]
 fn signal_mismatch_correct_count() {
-    let output = run_gdeye("signal_mismatch_project");
+    let output = run_rule(
+        "signal_mismatch_project",
+        &["correctness/signal-signature-mismatch"],
+    );
     let count = output.matches("signal-signature-mismatch").count();
     assert_eq!(
         count, 1,

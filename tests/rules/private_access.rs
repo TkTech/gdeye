@@ -2,7 +2,10 @@ use crate::common::*;
 
 #[test]
 fn self_private_access_ok() {
-    let output = run_gdeye("correctness_private_access.gd");
+    let output = run_rule(
+        "correctness_private_access.gd",
+        &["correctness/private-access"],
+    );
     // Accessing own private members should not be flagged
     let count = count_rule(&output, "correctness/private-access");
     assert_eq!(

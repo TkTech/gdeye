@@ -2,10 +2,7 @@ use crate::common::*;
 
 #[test]
 fn style_unnecessary_pass_flagged() {
-    let output = run_gdeye_with_args(
-        "style_unnecessary_pass.gd",
-        &["--disable", "correctness/unreachable-code"],
-    );
+    let output = run_rule("style_unnecessary_pass.gd", &["style/unnecessary-pass"]);
     assert!(
         has_message(&output, "Unnecessary `pass`"),
         "Should flag pass in body with other statements.\nOutput:\n{}",
@@ -15,10 +12,7 @@ fn style_unnecessary_pass_flagged() {
 
 #[test]
 fn style_unnecessary_pass_only_pass_not_flagged() {
-    let output = run_gdeye_with_args(
-        "style_unnecessary_pass.gd",
-        &["--disable", "correctness/unreachable-code"],
-    );
+    let output = run_rule("style_unnecessary_pass.gd", &["style/unnecessary-pass"]);
     // Line 11 is the only_pass function -- should not be flagged
     let lines: Vec<&str> = output
         .lines()
@@ -35,10 +29,7 @@ fn style_unnecessary_pass_only_pass_not_flagged() {
 
 #[test]
 fn style_unnecessary_pass_correct_count() {
-    let output = run_gdeye_with_args(
-        "style_unnecessary_pass.gd",
-        &["--disable", "correctness/unreachable-code"],
-    );
+    let output = run_rule("style_unnecessary_pass.gd", &["style/unnecessary-pass"]);
     let count = count_rule(&output, "style/unnecessary-pass");
     assert_eq!(
         count, 2,

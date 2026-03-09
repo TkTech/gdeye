@@ -2,7 +2,7 @@ use crate::common::*;
 
 #[test]
 fn style_untyped_return() {
-    let output = run_gdeye_style("style_rules.gd");
+    let output = run_rule("style_rules.gd", &["style/untyped-return"]);
     let return_lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("untyped-return"))

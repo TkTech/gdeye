@@ -4,7 +4,10 @@ use crate::common::*;
 
 #[test]
 fn correctness_unused_member_variable_flagged() {
-    let output = run_gdeye("correctness_unused_variable.gd");
+    let output = run_rule(
+        "correctness_unused_variable.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         has_message(&output, "`unused_member`"),
         "Should flag unused member variables.\nOutput:\n{}",
@@ -14,7 +17,10 @@ fn correctness_unused_member_variable_flagged() {
 
 #[test]
 fn correctness_used_member_variable_not_flagged() {
-    let output = run_gdeye("correctness_unused_variable.gd");
+    let output = run_rule(
+        "correctness_unused_variable.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         !has_message(&output, "`used_member`"),
         "Should not flag used member variable.\nOutput:\n{}",
@@ -24,7 +30,10 @@ fn correctness_used_member_variable_not_flagged() {
 
 #[test]
 fn correctness_exported_variable_not_flagged() {
-    let output = run_gdeye("correctness_unused_variable.gd");
+    let output = run_rule(
+        "correctness_unused_variable.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         !has_message(&output, "`exported_value`"),
         "Should not flag @export variables.\nOutput:\n{}",
@@ -34,7 +43,10 @@ fn correctness_exported_variable_not_flagged() {
 
 #[test]
 fn correctness_underscore_prefixed_not_flagged() {
-    let output = run_gdeye("correctness_unused_variable.gd");
+    let output = run_rule(
+        "correctness_unused_variable.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         !has_message(&output, "`_intentionally_unused`"),
         "Should not flag _prefixed variables.\nOutput:\n{}",
@@ -46,7 +58,10 @@ fn correctness_underscore_prefixed_not_flagged() {
 
 #[test]
 fn correctness_unused_local_variable() {
-    let output = run_gdeye("correctness_unused_variable.gd");
+    let output = run_rule(
+        "correctness_unused_variable.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         has_message(&output, "`unused_local`"),
         "Should detect unused local variable.\nOutput:\n{}",
@@ -56,7 +71,10 @@ fn correctness_unused_local_variable() {
 
 #[test]
 fn correctness_used_local_variable_not_flagged() {
-    let output = run_gdeye("correctness_unused_variable.gd");
+    let output = run_rule(
+        "correctness_unused_variable.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         !has_message(&output, "`used_local`"),
         "Should not flag used local variable.\nOutput:\n{}",
@@ -66,7 +84,10 @@ fn correctness_used_local_variable_not_flagged() {
 
 #[test]
 fn correctness_variable_used_in_condition_not_flagged() {
-    let output = run_gdeye("correctness_unused_variable.gd");
+    let output = run_rule(
+        "correctness_unused_variable.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         !has_message(&output, "`flag`"),
         "Should not flag variable used in if condition.\nOutput:\n{}",
@@ -76,7 +97,10 @@ fn correctness_variable_used_in_condition_not_flagged() {
 
 #[test]
 fn correctness_variable_used_in_return_not_flagged() {
-    let output = run_gdeye("correctness_unused_variable.gd");
+    let output = run_rule(
+        "correctness_unused_variable.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         !has_message(&output, "`result`"),
         "Should not flag variable used in return.\nOutput:\n{}",
@@ -86,7 +110,10 @@ fn correctness_variable_used_in_return_not_flagged() {
 
 #[test]
 fn correctness_variable_used_in_for_not_flagged() {
-    let output = run_gdeye("correctness_unused_variable.gd");
+    let output = run_rule(
+        "correctness_unused_variable.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         !has_message(&output, "`items`"),
         "Should not flag variable used in for loop iterator.\nOutput:\n{}",
@@ -98,7 +125,7 @@ fn correctness_variable_used_in_for_not_flagged() {
 
 #[test]
 fn correctness_match_body_uses_variable() {
-    let output = run_gdeye("correctness_match_usage.gd");
+    let output = run_rule("correctness_match_usage.gd", &["correctness/dead-store"]);
     assert!(
         !has_message(&output, "`threshold`"),
         "Should not flag variable used in match body returns.\nOutput:\n{}",
@@ -108,7 +135,7 @@ fn correctness_match_body_uses_variable() {
 
 #[test]
 fn correctness_match_subject_uses_variable() {
-    let output = run_gdeye("correctness_match_usage.gd");
+    let output = run_rule("correctness_match_usage.gd", &["correctness/dead-store"]);
     assert!(
         !has_message(&output, "`subject`"),
         "Should not flag variable used as match subject.\nOutput:\n{}",
@@ -118,7 +145,7 @@ fn correctness_match_subject_uses_variable() {
 
 #[test]
 fn correctness_match_genuinely_unused_variable() {
-    let output = run_gdeye("correctness_match_usage.gd");
+    let output = run_rule("correctness_match_usage.gd", &["correctness/dead-store"]);
     assert!(
         has_message(&output, "`unused_in_match`"),
         "Should flag variable genuinely unused in match.\nOutput:\n{}",
@@ -130,7 +157,10 @@ fn correctness_match_genuinely_unused_variable() {
 
 #[test]
 fn dead_assignment_if_else_both_branches() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     // var x = 1 is dead because both if and else branches overwrite x before use
     assert!(
         has_message(&output, "`x` is never read"),
@@ -141,7 +171,10 @@ fn dead_assignment_if_else_both_branches() {
 
 #[test]
 fn dead_assignment_reassignment_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         has_message(&output, "Value assigned to `counter` is never read"),
         "Should flag counter = 1 in dead_reassignment (non-declaration dead assignment).\nOutput:\n{}",
@@ -151,7 +184,10 @@ fn dead_assignment_reassignment_flagged() {
 
 #[test]
 fn dead_assignment_conditional_not_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         !has_message(&output, "`w`"),
         "Should NOT flag var w = 1 when only one branch reassigns (no else).\nOutput:\n{}",
@@ -161,7 +197,10 @@ fn dead_assignment_conditional_not_flagged() {
 
 #[test]
 fn dead_assignment_used_before_reassign_not_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         !has_message(&output, "`z`"),
         "Should NOT flag var z = 5 when z is used before reassignment.\nOutput:\n{}",
@@ -171,7 +210,10 @@ fn dead_assignment_used_before_reassign_not_flagged() {
 
 #[test]
 fn dead_assignment_elif_condition_not_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         !has_message(&output, "`chance`"),
         "Should NOT flag var chance when it is used in an elif condition.\nOutput:\n{}",
@@ -181,7 +223,10 @@ fn dead_assignment_elif_condition_not_flagged() {
 
 #[test]
 fn dead_assignment_correct_count() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     let count = count_rule(&output, "correctness/dead-store");
     // Expected dead assignments:
     // 1. var x = 1 in dead_in_if_else (all branches overwrite)
@@ -199,7 +244,10 @@ fn dead_assignment_correct_count() {
 
 #[test]
 fn useless_assignment_detected() {
-    let output = run_gdeye("correctness_useless_assignment.gd");
+    let output = run_rule(
+        "correctness_useless_assignment.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         has_message(&output, "is never read"),
         "Should detect useless assignment.\nOutput:\n{}",
@@ -209,7 +257,10 @@ fn useless_assignment_detected() {
 
 #[test]
 fn useless_assignment_count() {
-    let output = run_gdeye("correctness_useless_assignment.gd");
+    let output = run_rule(
+        "correctness_useless_assignment.gd",
+        &["correctness/dead-store"],
+    );
     let count = count_rule(&output, "correctness/dead-store");
     // Expected: 1 from test_useless (counter = 1), plus warnings from test_match_unused
     assert!(
@@ -222,7 +273,10 @@ fn useless_assignment_count() {
 
 #[test]
 fn useless_assignment_match_then_method_call_not_flagged() {
-    let output = run_gdeye("correctness_useless_assignment.gd");
+    let output = run_rule(
+        "correctness_useless_assignment.gd",
+        &["correctness/dead-store"],
+    );
     // mode_idx is used in some_object.select(mode_idx), should NOT be flagged
     assert!(
         !output.contains("mode_idx"),
@@ -233,7 +287,10 @@ fn useless_assignment_match_then_method_call_not_flagged() {
 
 #[test]
 fn useless_assignment_match_then_function_call_not_flagged() {
-    let output = run_gdeye("correctness_useless_assignment.gd");
+    let output = run_rule(
+        "correctness_useless_assignment.gd",
+        &["correctness/dead-store"],
+    );
     // Check that test_match_then_function_call doesn't produce warnings for 'result'
     // by verifying the function name isn't mentioned in dead-store context
     let lines: Vec<&str> = output
@@ -252,7 +309,10 @@ fn useless_assignment_match_then_function_call_not_flagged() {
 
 #[test]
 fn conditional_fallback_pattern_not_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     // Pattern: var x = default; if cond: x = other; use(x)
     // The default value IS used when condition is false
     assert!(
@@ -264,7 +324,10 @@ fn conditional_fallback_pattern_not_flagged() {
 
 #[test]
 fn conditional_assignment_used_not_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     // Pattern: var x = get_value(); if x == bad: x = fallback; use(x)
     // The initial value IS read in the condition check
     assert!(
@@ -276,7 +339,10 @@ fn conditional_assignment_used_not_flagged() {
 
 #[test]
 fn conditional_always_overwritten_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     // Pattern: var x = initial; if cond: x = a else: x = b; use(x)
     // The initial value is NEVER read - all paths overwrite
     assert!(
@@ -291,7 +357,10 @@ fn conditional_always_overwritten_flagged() {
 
 #[test]
 fn break_in_search_loop_not_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     // Pattern: var x = default; for item in items: if cond: x = value; break; use(x)
     // The assignment before break IS used after the loop exits
     assert!(
@@ -303,7 +372,10 @@ fn break_in_search_loop_not_flagged() {
 
 #[test]
 fn break_with_multiple_vars_not_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     // Pattern: multiple vars assigned before break, all used after loop
     assert!(
         !has_message(&output, "`status`") || !output.contains("not_dead_break_with_multiple_vars"),
@@ -320,7 +392,10 @@ fn break_with_multiple_vars_not_flagged() {
 
 #[test]
 fn loop_var_in_attribute_subscript_not_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     // Pattern: for i in 3: obj.array[i] - loop var used in attribute subscript
     // The subscript_arguments inside attribute_subscript must be recursed into
     let lines: Vec<&str> = output
@@ -339,7 +414,10 @@ fn loop_var_in_attribute_subscript_not_flagged() {
 
 #[test]
 fn continue_in_loop_not_flagged() {
-    let output = run_gdeye("correctness_dead_assignment.gd");
+    let output = run_rule(
+        "correctness_dead_assignment.gd",
+        &["correctness/dead-store"],
+    );
     // Pattern: var x; for item in items: if cond: continue; x = item; use(x)
     // The assignment before the loop ends can be used after the loop
     let lines: Vec<&str> = output

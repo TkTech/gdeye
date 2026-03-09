@@ -2,7 +2,7 @@ use crate::common::*;
 
 #[test]
 fn style_onready_hoist_simple_detected() {
-    let output = run_gdeye("style_onready_hoist.gd");
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     assert!(
         has_message(&output, "onready-hoist") && has_message(&output, "label"),
         "Should detect member var with $Node missing @onready.\nOutput:\n{}",
@@ -12,7 +12,7 @@ fn style_onready_hoist_simple_detected() {
 
 #[test]
 fn style_onready_hoist_nested_path_detected() {
-    let output = run_gdeye("style_onready_hoist.gd");
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     assert!(
         has_message(&output, "onready-hoist") && has_message(&output, "button"),
         "Should detect member var with nested $UI/Button path.\nOutput:\n{}",
@@ -22,7 +22,7 @@ fn style_onready_hoist_nested_path_detected() {
 
 #[test]
 fn style_onready_hoist_existing_onready_not_flagged() {
-    let output = run_gdeye("style_onready_hoist.gd");
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     assert!(
         !output.contains("sprite")
             || !output
@@ -35,7 +35,7 @@ fn style_onready_hoist_existing_onready_not_flagged() {
 
 #[test]
 fn style_onready_hoist_non_node_path_not_flagged() {
-    let output = run_gdeye("style_onready_hoist.gd");
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     let onready_lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("onready-hoist"))
@@ -53,7 +53,7 @@ fn style_onready_hoist_non_node_path_not_flagged() {
 
 #[test]
 fn style_onready_hoist_local_var_not_flagged() {
-    let output = run_gdeye("style_onready_hoist.gd");
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     assert!(
         !output.contains("local_label"),
         "Should NOT flag local variables inside functions.\nOutput:\n{}",
@@ -63,7 +63,7 @@ fn style_onready_hoist_local_var_not_flagged() {
 
 #[test]
 fn style_onready_hoist_ready_assignment_detected() {
-    let output = run_gdeye("style_onready_hoist.gd");
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     assert!(
         has_message(&output, "onready-hoist")
             && has_message(&output, "player")
@@ -75,7 +75,7 @@ fn style_onready_hoist_ready_assignment_detected() {
 
 #[test]
 fn style_onready_hoist_ready_assignment_typed_detected() {
-    let output = run_gdeye("style_onready_hoist.gd");
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     assert!(
         has_message(&output, "onready-hoist")
             && has_message(&output, "enemy")
@@ -87,7 +87,7 @@ fn style_onready_hoist_ready_assignment_typed_detected() {
 
 #[test]
 fn style_onready_hoist_non_node_assignment_not_flagged() {
-    let output = run_gdeye("style_onready_hoist.gd");
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     let onready_lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("onready-hoist"))
@@ -105,7 +105,7 @@ fn style_onready_hoist_non_node_assignment_not_flagged() {
 
 #[test]
 fn style_onready_hoist_has_fix() {
-    let output = run_gdeye("style_onready_hoist.gd");
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     // The rule provides fixes - count should match diagnostics
     let count = count_rule(&output, "style/onready-hoist");
     assert!(
@@ -118,7 +118,7 @@ fn style_onready_hoist_has_fix() {
 
 #[test]
 fn style_onready_hoist_inner_class_detected() {
-    let output = run_gdeye("style_onready_hoist.gd");
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     assert!(
         has_message(&output, "onready-hoist") && has_message(&output, "inner_label"),
         "Should detect member var in inner class missing @onready.\nOutput:\n{}",

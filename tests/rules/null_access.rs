@@ -2,7 +2,7 @@ use crate::common::*;
 
 #[test]
 fn chained_null_access() {
-    let output = run_gdeye("correctness_null_access.gd");
+    let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
     assert!(
         has_message(&output, "can return null"),
         "Should detect chained null access.\nOutput:\n{}",
@@ -12,7 +12,7 @@ fn chained_null_access() {
 
 #[test]
 fn dollar_null_access() {
-    let output = run_gdeye("correctness_null_access.gd");
+    let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
     assert!(
         has_message(&output, "node access can return null"),
         "Should detect $ null access.\nOutput:\n{}",
@@ -22,7 +22,7 @@ fn dollar_null_access() {
 
 #[test]
 fn null_access_count() {
-    let output = run_gdeye("correctness_null_access.gd");
+    let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
     let count = count_rule(&output, "correctness/null-access");
     // Should flag: test_chained (3), test_dollar (2)
     // Should NOT flag: test_safe, test_guarded_*, etc.
@@ -36,7 +36,7 @@ fn null_access_count() {
 
 #[test]
 fn guarded_access_not_flagged() {
-    let output = run_gdeye("correctness_null_access.gd");
+    let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
     // Count warnings - guarded accesses should reduce total
     let count = count_rule(&output, "correctness/null-access");
     // The guarded functions test_guarded_dollar, test_guarded_has_node,
@@ -54,7 +54,7 @@ fn guarded_access_not_flagged() {
 #[test]
 fn is_instance_valid_guard_not_flagged() {
     // Verify that is_instance_valid guard is recognized
-    let output = run_gdeye("correctness_null_access.gd");
+    let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
     // The test_guarded_is_instance_valid function should not have any warnings
     // because the access is guarded by is_instance_valid(node)
     let lines: Vec<&str> = output
@@ -71,7 +71,7 @@ fn is_instance_valid_guard_not_flagged() {
 #[test]
 fn null_comparison_guard_not_flagged() {
     // Verify that != null guard is recognized
-    let output = run_gdeye("correctness_null_access.gd");
+    let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
     let lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("null-access") && l.contains("test_guarded_null_comparison"))

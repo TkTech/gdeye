@@ -2,7 +2,7 @@ use crate::common::*;
 
 #[test]
 fn orphan_node_detected() {
-    let output = run_gdeye("correctness_orphan_node.gd");
+    let output = run_rule("correctness_orphan_node.gd", &["correctness/orphan-node"]);
     assert!(
         has_message(&output, "never added to the scene tree"),
         "Should detect orphan node.\nOutput:\n{}",
@@ -12,7 +12,7 @@ fn orphan_node_detected() {
 
 #[test]
 fn orphan_node_safe_not_flagged() {
-    let output = run_gdeye("correctness_orphan_node.gd");
+    let output = run_rule("correctness_orphan_node.gd", &["correctness/orphan-node"]);
     // test_safe uses add_child, should not be flagged
     // The line for test_safe is line 12
     let flagged_lines: Vec<&str> = output
@@ -28,7 +28,7 @@ fn orphan_node_safe_not_flagged() {
 
 #[test]
 fn orphan_node_count() {
-    let output = run_gdeye("correctness_orphan_node.gd");
+    let output = run_rule("correctness_orphan_node.gd", &["correctness/orphan-node"]);
     let count = count_rule(&output, "correctness/orphan-node");
     assert!(
         count >= 1,

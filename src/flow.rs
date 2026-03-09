@@ -110,6 +110,80 @@ fn analyze_function(
         }
     }
 
+    // Post-filter: suppress false positives from loop guard flags and correlated conditions.
+    // The reaching-definitions must-analysis (intersection at merge points) is conservative
+    // and loses precision for these two common patterns.
+    if !result.uninitialized_uses.is_empty() {
+        // --- Loop filter ---
+        // Build inverted index: block_id -> set of all loop body block IDs containing it
+        let mut block_to_loop_body: HashMap<usize, HashSet<usize>> = HashMap::new();
+        for body_set in cfg.loops.values() {
+            for &block_id in body_set {
+                block_to_loop_body
+                    .entry(block_id)
+                    .or_default()
+                    .extend(body_set.iter());
+            }
+        }
+
+        // Collect definitions per block for lookup
+        let block_defs_by_id: HashMap<usize, &Vec<(String, usize, bool)>> =
+            cfg.blocks.iter().map(|b| (b.id, &b.definitions)).collect();
+
+        // Build a map from block uses to block IDs for quick lookup
+        let mut use_to_block: HashMap<(&str, usize), usize> = HashMap::new();
+        for block in &cfg.blocks {
+            for (var_name, use_line) in &block.uses {
+                use_to_block.insert((var_name.as_str(), *use_line), block.id);
+            }
+        }
+
+        // --- Condition guard filter ---
+        // Build map: (condition_var, is_negated) -> set of var names defined in guarded blocks
+        let mut guarded_defs: HashMap<(String, bool), HashSet<String>> = HashMap::new();
+        for block in &cfg.blocks {
+            if let Some(guard) = &block.condition_guard {
+                let entry = guarded_defs.entry(guard.clone()).or_default();
+                for (var_name, _, _) in &block.definitions {
+                    entry.insert(var_name.clone());
+                }
+            }
+        }
+
+        result.uninitialized_uses.retain(|(var_name, use_line)| {
+            let block_id = match use_to_block.get(&(var_name.as_str(), *use_line)) {
+                Some(id) => *id,
+                None => return true,
+            };
+
+            // Loop filter: if use is inside a loop body and some block in the same
+            // loop defines the variable on an earlier or equal line, suppress.
+            if let Some(loop_body) = block_to_loop_body.get(&block_id) {
+                for &body_block_id in loop_body {
+                    if let Some(defs) = block_defs_by_id.get(&body_block_id) {
+                        for (def_name, def_line, _) in *defs {
+                            if def_name == var_name && *def_line <= *use_line {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Condition guard filter: if use is in a guarded block and the same
+            // guard also protects a definition of this variable, suppress.
+            if let Some(guard) = &cfg.blocks[block_id].condition_guard {
+                if let Some(defs_in_guard) = guarded_defs.get(guard) {
+                    if defs_in_guard.contains(var_name) {
+                        return false;
+                    }
+                }
+            }
+
+            true
+        });
+    }
+
     // Collect the set of locally-declared variables (those with a `var` statement).
     // Only these can be flagged as dead assignments - reassignments to unknown
     // identifiers could be member variable or inherited property writes.
@@ -636,6 +710,83 @@ func test_match_early_return(value):
             uninit_result.is_empty(),
             "Variable should NOT be flagged when match has early-return default: {:?}",
             uninit_result
+        );
+    }
+
+    #[test]
+    fn loop_guard_flag_not_uninitialized() {
+        // Pattern: a guard flag ensures the variable is assigned on the first
+        // loop iteration. Subsequent iterations skip the assignment because the
+        // flag is already true, but the variable was set in the first pass.
+        // Must-analysis (intersection at loop back-edge) loses this information
+        // because it intersects the entry state (no def) with the end-of-loop
+        // state (def), dropping the variable from the reaching set.
+        let source = r#"
+func test_loop_guard_flag():
+    var cached_value
+    var is_loaded = false
+    for item in [1, 2, 3]:
+        if not is_loaded:
+            cached_value = item * 10
+            is_loaded = true
+        print(cached_value)
+"#;
+        let parsed = parse_source(source).expect("Should parse");
+        let file_sym = collect_symbols(Path::new("test.gd"), &parsed);
+        let cfgs = build_cfgs(&parsed);
+        let results = analyze(&cfgs, &file_sym);
+        let func_result = results
+            .functions
+            .get("test_loop_guard_flag")
+            .expect("Should have function");
+
+        let uninit: Vec<_> = func_result
+            .uninitialized_uses
+            .iter()
+            .filter(|(name, _)| name == "cached_value")
+            .collect();
+        assert!(
+            uninit.is_empty(),
+            "Guard-flag pattern should NOT flag cached_value as uninitialized: {:?}",
+            uninit
+        );
+    }
+
+    #[test]
+    fn correlated_condition_not_uninitialized() {
+        // Pattern: the same immutable local boolean guards both the assignment
+        // and the use. If the condition is false neither the assignment nor the
+        // use is reached, so the variable is always initialized when read.
+        // Must-analysis loses this because the merge after the first if drops
+        // the variable (it is only defined on the true branch), and the second
+        // if's true-branch inherits that merged state.
+        let source = r#"
+func test_correlated_condition(flag):
+    var special_value
+    if flag:
+        special_value = 42
+    var other = 0
+    if flag:
+        print(special_value)
+"#;
+        let parsed = parse_source(source).expect("Should parse");
+        let file_sym = collect_symbols(Path::new("test.gd"), &parsed);
+        let cfgs = build_cfgs(&parsed);
+        let results = analyze(&cfgs, &file_sym);
+        let func_result = results
+            .functions
+            .get("test_correlated_condition")
+            .expect("Should have function");
+
+        let uninit: Vec<_> = func_result
+            .uninitialized_uses
+            .iter()
+            .filter(|(name, _)| name == "special_value")
+            .collect();
+        assert!(
+            uninit.is_empty(),
+            "Correlated-condition pattern should NOT flag special_value as uninitialized: {:?}",
+            uninit
         );
     }
 }

@@ -2,7 +2,10 @@ use crate::common::*;
 
 #[test]
 fn broken_node_path_dollar_syntax() {
-    let output = run_gdeye("node_paths_project/player.gd");
+    let output = run_rule(
+        "node_paths_project/player.gd",
+        &["correctness/broken-node-path"],
+    );
     assert!(
         output.contains("NonExistentNode"),
         "Should flag $NonExistentNode as broken.\nOutput:\n{}",
@@ -12,7 +15,10 @@ fn broken_node_path_dollar_syntax() {
 
 #[test]
 fn broken_node_path_get_node_call() {
-    let output = run_gdeye("node_paths_project/player.gd");
+    let output = run_rule(
+        "node_paths_project/player.gd",
+        &["correctness/broken-node-path"],
+    );
     assert!(
         output.contains("DoesNotExist"),
         "Should flag get_node(\"DoesNotExist\") as broken.\nOutput:\n{}",
@@ -22,7 +28,10 @@ fn broken_node_path_get_node_call() {
 
 #[test]
 fn broken_node_path_nested() {
-    let output = run_gdeye("node_paths_project/player.gd");
+    let output = run_rule(
+        "node_paths_project/player.gd",
+        &["correctness/broken-node-path"],
+    );
     assert!(
         output.contains("Sprite/SubChild"),
         "Should flag $Sprite/SubChild as broken (Sprite has no SubChild).\nOutput:\n{}",
@@ -32,7 +41,10 @@ fn broken_node_path_nested() {
 
 #[test]
 fn broken_node_path_valid_not_flagged() {
-    let output = run_gdeye("node_paths_project/player.gd");
+    let output = run_rule(
+        "node_paths_project/player.gd",
+        &["correctness/broken-node-path"],
+    );
     let broken_lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("broken-node-path"))
@@ -50,7 +62,10 @@ fn broken_node_path_valid_not_flagged() {
 
 #[test]
 fn broken_node_path_correct_count() {
-    let output = run_gdeye("node_paths_project/player.gd");
+    let output = run_rule(
+        "node_paths_project/player.gd",
+        &["correctness/broken-node-path"],
+    );
     let count = output.matches("broken-node-path").count();
     assert_eq!(
         count, 5,

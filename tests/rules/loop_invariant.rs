@@ -5,7 +5,10 @@ use crate::common::*;
 
 #[test]
 fn perf_loop_invariant_function_call_not_flagged() {
-    let output = run_gdeye("perf_loop_invariant.gd");
+    let output = run_rule(
+        "perf_loop_invariant.gd",
+        &["perf/loop-invariant", "perf/allocation"],
+    );
     assert!(
         !has_message(&output, "expensive_calculation"),
         "Should NOT flag function calls (could have side effects).\nOutput:\n{}",
@@ -15,7 +18,10 @@ fn perf_loop_invariant_function_call_not_flagged() {
 
 #[test]
 fn perf_loop_invariant_method_call_not_flagged() {
-    let output = run_gdeye("perf_loop_invariant.gd");
+    let output = run_rule(
+        "perf_loop_invariant.gd",
+        &["perf/loop-invariant", "perf/allocation"],
+    );
     assert!(
         !has_message(&output, "randf_range"),
         "Should NOT flag method calls (could have side effects).\nOutput:\n{}",
@@ -25,7 +31,10 @@ fn perf_loop_invariant_method_call_not_flagged() {
 
 #[test]
 fn perf_loop_invariant_depends_on_loop_var_not_flagged() {
-    let output = run_gdeye("perf_loop_invariant.gd");
+    let output = run_rule(
+        "perf_loop_invariant.gd",
+        &["perf/loop-invariant", "perf/allocation"],
+    );
     // The array [i, i + 1, i + 2] should not be flagged
     assert!(
         !has_message(&output, "i + 1"),
@@ -38,7 +47,10 @@ fn perf_loop_invariant_depends_on_loop_var_not_flagged() {
 
 #[test]
 fn perf_allocation_dict_in_loop_flagged() {
-    let output = run_gdeye("perf_loop_invariant.gd");
+    let output = run_rule(
+        "perf_loop_invariant.gd",
+        &["perf/loop-invariant", "perf/allocation"],
+    );
     // Dictionary allocation is now caught by perf/allocation
     assert!(
         has_message(&output, "perf/allocation") || has_message(&output, "allocation"),
@@ -49,7 +61,10 @@ fn perf_allocation_dict_in_loop_flagged() {
 
 #[test]
 fn perf_allocation_array_in_loop_flagged() {
-    let output = run_gdeye("perf_loop_invariant.gd");
+    let output = run_rule(
+        "perf_loop_invariant.gd",
+        &["perf/loop-invariant", "perf/allocation"],
+    );
     // Array allocation is now caught by perf/allocation
     let has_allocation =
         has_message(&output, "perf/allocation") || has_message(&output, "Array literal allocation");

@@ -4,7 +4,7 @@ use crate::common::*;
 
 #[test]
 fn perf_allocation_array_literal_in_process() {
-    let output = run_gdeye("perf_process_allocation.gd");
+    let output = run_rule("perf_process_allocation.gd", &["perf/allocation"]);
     assert!(
         has_message(&output, "Array literal allocation inside `_process`"),
         "Should detect array literal in _process.\nOutput:\n{}",
@@ -14,7 +14,7 @@ fn perf_allocation_array_literal_in_process() {
 
 #[test]
 fn perf_allocation_dictionary_literal_in_process() {
-    let output = run_gdeye("perf_process_allocation.gd");
+    let output = run_rule("perf_process_allocation.gd", &["perf/allocation"]);
     assert!(
         has_message(&output, "Dictionary literal allocation inside `_process`"),
         "Should detect dictionary literal in _process.\nOutput:\n{}",
@@ -24,7 +24,7 @@ fn perf_allocation_dictionary_literal_in_process() {
 
 #[test]
 fn perf_allocation_constructor_in_physics_process() {
-    let output = run_gdeye("perf_process_allocation.gd");
+    let output = run_rule("perf_process_allocation.gd", &["perf/allocation"]);
     assert!(
         has_message(&output, "`Array()` allocation inside `_physics_process`"),
         "Should detect Array() constructor in _physics_process.\nOutput:\n{}",
@@ -34,7 +34,7 @@ fn perf_allocation_constructor_in_physics_process() {
 
 #[test]
 fn perf_allocation_not_in_regular_function() {
-    let output = run_gdeye("perf_process_allocation.gd");
+    let output = run_rule("perf_process_allocation.gd", &["perf/allocation"]);
     assert!(
         !has_message(&output, "inside `some_function`"),
         "Should not flag allocations in regular functions.\nOutput:\n{}",
@@ -44,7 +44,7 @@ fn perf_allocation_not_in_regular_function() {
 
 #[test]
 fn perf_allocation_in_process_correct_count() {
-    let output = run_gdeye("perf_process_allocation.gd");
+    let output = run_rule("perf_process_allocation.gd", &["perf/allocation"]);
     let count = count_rule(&output, "perf/allocation");
     assert_eq!(
         count, 3,
@@ -57,7 +57,7 @@ fn perf_allocation_in_process_correct_count() {
 
 #[test]
 fn perf_allocation_in_loop_array() {
-    let output = run_gdeye("perf_allocation_in_loop.gd");
+    let output = run_rule("perf_allocation_in_loop.gd", &["perf/allocation"]);
     assert!(
         has_message(&output, "`Array()` allocation inside `for` loop"),
         "Should detect Array() in for loop.\nOutput:\n{}",
@@ -67,7 +67,7 @@ fn perf_allocation_in_loop_array() {
 
 #[test]
 fn perf_allocation_in_loop_dictionary() {
-    let output = run_gdeye("perf_allocation_in_loop.gd");
+    let output = run_rule("perf_allocation_in_loop.gd", &["perf/allocation"]);
     assert!(
         has_message(&output, "`Dictionary()` allocation inside `while` loop"),
         "Should detect Dictionary() in while loop.\nOutput:\n{}",
@@ -77,7 +77,7 @@ fn perf_allocation_in_loop_dictionary() {
 
 #[test]
 fn perf_allocation_in_loop_correct_count() {
-    let output = run_gdeye("perf_allocation_in_loop.gd");
+    let output = run_rule("perf_allocation_in_loop.gd", &["perf/allocation"]);
     let count = count_rule(&output, "perf/allocation");
     // Should detect: Array(), Dictionary(), array literal [1,2,3,4,5,6], dict literal
     assert!(

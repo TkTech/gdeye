@@ -10,31 +10,28 @@ pub fn fixture_path(name: &str) -> PathBuf {
         .join(name)
 }
 
+/// Run gdeye with only the specified rule(s) enabled.
+/// This is the preferred helper for rule tests — it isolates the test from
+/// other rules so adding new rules never causes unrelated test failures.
+pub fn run_rule(fixture: &str, rules: &[&str]) -> String {
+    let mut args: Vec<&str> = Vec::new();
+    for rule in rules {
+        args.push("--rule");
+        args.push(rule);
+    }
+    run_gdeye_with_args(fixture, &args)
+}
+
+/// Run gdeye with only the specified rule enabled, returning stdout (for JSON/SARIF).
+pub fn run_rule_stdout(fixture: &str, rule: &str, extra_args: &[&str]) -> String {
+    let mut args = vec!["--rule", rule];
+    args.extend_from_slice(extra_args);
+    run_gdeye_stdout(fixture, &args)
+}
+
+/// Run gdeye with all rules enabled. Prefer `run_rule` for single-rule tests.
 pub fn run_gdeye(fixture: &str) -> String {
-    // Disable style rules and unused-function by default so correctness/perf tests aren't affected
-    run_gdeye_with_args(
-        fixture,
-        &[
-            "--disable",
-            "style/naming-convention",
-            "--disable",
-            "style/untyped-parameter",
-            "--disable",
-            "style/untyped-return",
-            "--disable",
-            "style/function-too-long",
-            "--disable",
-            "style/excessive-nesting",
-            "--disable",
-            "style/unnecessary-pass",
-            "--disable",
-            "style/standalone-expression",
-            "--disable",
-            "style/no-else-return",
-            "--disable",
-            "correctness/unused-function",
-        ],
-    )
+    run_gdeye_with_args(fixture, &[])
 }
 
 pub fn run_gdeye_with_args(fixture: &str, extra_args: &[&str]) -> String {
@@ -92,8 +89,4 @@ pub fn count_rule(output: &str, rule: &str) -> usize {
 
 pub fn has_message(output: &str, msg: &str) -> bool {
     output.contains(msg)
-}
-
-pub fn run_gdeye_style(fixture: &str) -> String {
-    run_gdeye_with_args(fixture, &[])
 }

@@ -2,21 +2,7 @@ use crate::common::*;
 
 #[test]
 fn cross_file_used_function_not_flagged() {
-    let output = run_gdeye_with_args(
-        "cross_file_usage",
-        &[
-            "--disable",
-            "style/naming-convention",
-            "--disable",
-            "style/untyped-parameter",
-            "--disable",
-            "style/untyped-return",
-            "--disable",
-            "style/function-too-long",
-            "--disable",
-            "style/excessive-nesting",
-        ],
-    );
+    let output = run_rule("cross_file_usage", &["correctness/unused-function"]);
     // take_damage is called via player.take_damage() in game.gd
     let unused_func_lines: Vec<&str> = output
         .lines()
@@ -33,21 +19,7 @@ fn cross_file_used_function_not_flagged() {
 
 #[test]
 fn cross_file_scene_handler_marks_function_used() {
-    let output = run_gdeye_with_args(
-        "cross_file_usage",
-        &[
-            "--disable",
-            "style/naming-convention",
-            "--disable",
-            "style/untyped-parameter",
-            "--disable",
-            "style/untyped-return",
-            "--disable",
-            "style/function-too-long",
-            "--disable",
-            "style/excessive-nesting",
-        ],
-    );
+    let output = run_rule("cross_file_usage", &["correctness/unused-function"]);
     // _game_over is connected as signal handler in main.tscn
     let unused_func_lines: Vec<&str> = output
         .lines()

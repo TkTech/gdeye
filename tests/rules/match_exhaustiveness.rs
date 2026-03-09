@@ -1,8 +1,11 @@
-use crate::common::{count_rule, run_gdeye};
+use crate::common::*;
 
 #[test]
 fn match_exhaustiveness_missing_variant() {
-    let output = run_gdeye("match_exhaustiveness.gd");
+    let output = run_rule(
+        "match_exhaustiveness.gd",
+        &["correctness/match-exhaustiveness"],
+    );
     assert!(
         count_rule(&output, "match-exhaustiveness") >= 1,
         "Should warn about non-exhaustive match.\nOutput:\n{}",
@@ -17,7 +20,10 @@ fn match_exhaustiveness_missing_variant() {
 
 #[test]
 fn match_exhaustiveness_complete_not_flagged() {
-    let output = run_gdeye("match_exhaustiveness.gd");
+    let output = run_rule(
+        "match_exhaustiveness.gd",
+        &["correctness/match-exhaustiveness"],
+    );
     // The complete match (check_state_complete) should not be flagged
     // We verify by checking only 1 warning exists (for the incomplete match)
     assert_eq!(

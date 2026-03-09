@@ -51,7 +51,7 @@ fn cli_disable_multiple_rules() {
 
 #[test]
 fn suppression_unsuppressed_still_warns() {
-    let output = run_gdeye("suppression_comments.gd");
+    let output = run_rule("suppression_comments.gd", &["correctness/dead-store"]);
     assert!(
         has_message(&output, "`unused_no_suppress`"),
         "Unsuppressed variable should still warn.\nOutput:\n{}",
@@ -61,7 +61,7 @@ fn suppression_unsuppressed_still_warns() {
 
 #[test]
 fn suppression_ignore_next_line_blanket() {
-    let output = run_gdeye("suppression_comments.gd");
+    let output = run_rule("suppression_comments.gd", &["correctness/dead-store"]);
     assert!(
         !has_message(&output, "`unused_blanket_next`"),
         "gdeye:ignore-next-line should suppress.\nOutput:\n{}",
@@ -71,7 +71,7 @@ fn suppression_ignore_next_line_blanket() {
 
 #[test]
 fn suppression_ignore_same_line_specific_rule() {
-    let output = run_gdeye("suppression_comments.gd");
+    let output = run_rule("suppression_comments.gd", &["correctness/dead-store"]);
     assert!(
         !has_message(&output, "`unused_specific_same`"),
         "gdeye:ignore with specific rule should suppress same line.\nOutput:\n{}",
@@ -81,7 +81,7 @@ fn suppression_ignore_same_line_specific_rule() {
 
 #[test]
 fn suppression_ignore_next_line_specific_rule() {
-    let output = run_gdeye("suppression_comments.gd");
+    let output = run_rule("suppression_comments.gd", &["correctness/dead-store"]);
     assert!(
         !has_message(&output, "`unused_specific_next`"),
         "gdeye:ignore-next-line with specific rule should suppress.\nOutput:\n{}",
@@ -91,7 +91,7 @@ fn suppression_ignore_next_line_specific_rule() {
 
 #[test]
 fn suppression_wrong_rule_does_not_suppress() {
-    let output = run_gdeye("suppression_comments.gd");
+    let output = run_rule("suppression_comments.gd", &["correctness/dead-store"]);
     assert!(
         has_message(&output, "`unused_wrong_rule`"),
         "gdeye:ignore-next-line with wrong rule ID should not suppress.\nOutput:\n{}",
@@ -101,7 +101,7 @@ fn suppression_wrong_rule_does_not_suppress() {
 
 #[test]
 fn suppression_ignore_same_line_blanket() {
-    let output = run_gdeye("suppression_comments.gd");
+    let output = run_rule("suppression_comments.gd", &["correctness/dead-store"]);
     assert!(
         !has_message(&output, "`unused_inline_blanket`"),
         "gdeye:ignore on same line should suppress.\nOutput:\n{}",
@@ -111,7 +111,7 @@ fn suppression_ignore_same_line_blanket() {
 
 #[test]
 fn suppression_signal_same_line() {
-    let output = run_gdeye("suppression_comments.gd");
+    let output = run_rule("suppression_comments.gd", &["correctness/unused-signal"]);
     assert!(
         !has_message(&output, "`unused_signal_suppressed`"),
         "gdeye:ignore should suppress signal warning.\nOutput:\n{}",
@@ -126,7 +126,7 @@ fn suppression_signal_same_line() {
 
 #[test]
 fn suppression_parameter_same_line() {
-    let output = run_gdeye("suppression_comments.gd");
+    let output = run_rule("suppression_comments.gd", &["correctness/unused-parameter"]);
     assert!(
         !has_message(&output, "`unused_param`"),
         "gdeye:ignore should suppress parameter warning.\nOutput:\n{}",
@@ -143,22 +143,10 @@ fn suppression_parameter_same_line() {
 
 #[test]
 fn format_json_outputs_array() {
-    let output = run_gdeye_stdout(
+    let output = run_rule_stdout(
         "correctness_unused_parameter.gd",
-        &[
-            "--format",
-            "json",
-            "--disable",
-            "style/untyped-parameter",
-            "--disable",
-            "style/untyped-return",
-            "--disable",
-            "style/naming-convention",
-            "--disable",
-            "correctness/unused-function",
-            "--disable",
-            "correctness/dead-store",
-        ],
+        "correctness/unused-parameter",
+        &["--format", "json"],
     );
     let parsed: serde_json::Value =
         serde_json::from_str(&output).expect("JSON output should be valid JSON");
@@ -169,7 +157,11 @@ fn format_json_outputs_array() {
 
 #[test]
 fn format_json_contains_rule_and_message() {
-    let output = run_gdeye_stdout("correctness_unused_parameter.gd", &["--format", "json"]);
+    let output = run_rule_stdout(
+        "correctness_unused_parameter.gd",
+        "correctness/unused-parameter",
+        &["--format", "json"],
+    );
     let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
     let first = &parsed[0];
     assert_eq!(first["rule"], "correctness/unused-parameter");
@@ -204,22 +196,10 @@ fn format_sarif_valid_structure() {
 
 #[test]
 fn format_sarif_contains_results() {
-    let output = run_gdeye_stdout(
+    let output = run_rule_stdout(
         "correctness_unused_parameter.gd",
-        &[
-            "--format",
-            "sarif",
-            "--disable",
-            "style/untyped-parameter",
-            "--disable",
-            "style/untyped-return",
-            "--disable",
-            "style/naming-convention",
-            "--disable",
-            "correctness/unused-function",
-            "--disable",
-            "correctness/dead-store",
-        ],
+        "correctness/unused-parameter",
+        &["--format", "sarif"],
     );
     let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
     let results = parsed["runs"][0]["results"].as_array().unwrap();
@@ -250,18 +230,7 @@ fn format_sarif_rules_match_registered() {
 fn format_compact_one_line_per_issue() {
     let output = run_gdeye_with_args(
         "correctness_unused_variable.gd",
-        &[
-            "--format",
-            "compact",
-            "--disable",
-            "style/untyped-parameter",
-            "--disable",
-            "style/untyped-return",
-            "--disable",
-            "style/naming-convention",
-            "--disable",
-            "correctness/unused-function",
-        ],
+        &["--format", "compact", "--rule", "correctness/dead-store"],
     );
     let lines: Vec<&str> = output
         .lines()
@@ -285,7 +254,10 @@ fn format_compact_one_line_per_issue() {
 
 #[test]
 fn format_compact_includes_path_line_col() {
-    let output = run_gdeye_with_args("correctness_unused_variable.gd", &["--format", "compact"]);
+    let output = run_gdeye_with_args(
+        "correctness_unused_variable.gd",
+        &["--format", "compact", "--rule", "correctness/dead-store"],
+    );
     let first_line = output.lines().next().unwrap();
     assert!(
         first_line.contains("correctness_unused_variable.gd:4:0: warning [correctness/dead-store]"),
@@ -308,7 +280,10 @@ fn format_compact_no_summary() {
 
 #[test]
 fn format_text_summary_shows_counts() {
-    let output = run_gdeye("correctness_unused_variable.gd");
+    let output = run_rule(
+        "correctness_unused_variable.gd",
+        &["correctness/dead-store"],
+    );
     assert!(
         output.contains("Found 2 warnings"),
         "Text output should end with a summary line.\nOutput:\n{}",
@@ -373,7 +348,7 @@ fn autoload_usage_no_false_positives() {
 
 #[test]
 fn autoload_unused_local_still_warns() {
-    let output = run_gdeye("autoload_usage.gd");
+    let output = run_rule("autoload_usage.gd", &["correctness/dead-store"]);
     assert!(
         has_message(&output, "`unused_var`"),
         "Unused local variable should still be flagged with autoloads present.\nOutput:\n{}",
@@ -427,20 +402,7 @@ fn subcommand_dump_ast() {
 fn output_format_compact() {
     let output = run_gdeye_with_args(
         "correctness_unused_variable.gd",
-        &[
-            "--format",
-            "compact",
-            "--disable",
-            "style/naming-convention",
-            "--disable",
-            "style/untyped-parameter",
-            "--disable",
-            "style/untyped-return",
-            "--disable",
-            "style/function-too-long",
-            "--disable",
-            "style/excessive-nesting",
-        ],
+        &["--format", "compact", "--rule", "correctness/dead-store"],
     );
     assert!(
         output.contains("correctness/dead-store"),
@@ -455,16 +417,8 @@ fn output_format_json() {
     let (stdout, _, _) = run_gdeye_subcommand(&[
         "--format",
         "json",
-        "--disable",
-        "style/naming-convention",
-        "--disable",
-        "style/untyped-parameter",
-        "--disable",
-        "style/untyped-return",
-        "--disable",
-        "style/function-too-long",
-        "--disable",
-        "style/excessive-nesting",
+        "--rule",
+        "correctness/dead-store",
         fixture.to_str().unwrap(),
     ]);
     let parsed: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|e| {
@@ -482,16 +436,8 @@ fn output_format_sarif() {
     let (stdout, _, _) = run_gdeye_subcommand(&[
         "--format",
         "sarif",
-        "--disable",
-        "style/naming-convention",
-        "--disable",
-        "style/untyped-parameter",
-        "--disable",
-        "style/untyped-return",
-        "--disable",
-        "style/function-too-long",
-        "--disable",
-        "style/excessive-nesting",
+        "--rule",
+        "correctness/dead-store",
         fixture.to_str().unwrap(),
     ]);
     let parsed: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|e| {
@@ -516,20 +462,7 @@ fn fix_flag_removes_unused_var() {
     let binary = env!("CARGO_BIN_EXE_gdeye");
     // Use --unsafe to apply destructive fixes like removing unused variables
     let output = Command::new(binary)
-        .args([
-            "--fix",
-            "--unsafe",
-            "--disable",
-            "style/naming-convention",
-            "--disable",
-            "style/untyped-parameter",
-            "--disable",
-            "style/untyped-return",
-            "--disable",
-            "style/function-too-long",
-            "--disable",
-            "style/excessive-nesting",
-        ])
+        .args(["--fix", "--unsafe", "--rule", "correctness/dead-store"])
         .arg(&tmp_file)
         .output()
         .expect("Failed to run gdeye --fix --unsafe");
@@ -556,16 +489,8 @@ fn check_subcommand_works() {
     let fixture = fixture_path("correctness_unused_variable.gd");
     let (_, stderr, _) = run_gdeye_subcommand(&[
         "check",
-        "--disable",
-        "style/naming-convention",
-        "--disable",
-        "style/untyped-parameter",
-        "--disable",
-        "style/untyped-return",
-        "--disable",
-        "style/function-too-long",
-        "--disable",
-        "style/excessive-nesting",
+        "--rule",
+        "correctness/dead-store",
         fixture.to_str().unwrap(),
     ]);
     assert!(
@@ -597,16 +522,8 @@ fn target_version_cli_flag() {
     let (_, stderr, _) = run_gdeye_subcommand(&[
         "--target-version",
         "4.5",
-        "--disable",
-        "style/naming-convention",
-        "--disable",
-        "style/untyped-parameter",
-        "--disable",
-        "style/untyped-return",
-        "--disable",
-        "style/function-too-long",
-        "--disable",
-        "style/excessive-nesting",
+        "--rule",
+        "correctness/dead-store",
         fixture.to_str().unwrap(),
     ]);
     assert!(
@@ -643,7 +560,7 @@ fn comprehensive_patterns_no_panics() {
 
 #[test]
 fn comprehensive_unused_signal() {
-    let output = run_gdeye("comprehensive_patterns.gd");
+    let output = run_rule("comprehensive_patterns.gd", &["correctness/unused-signal"]);
     assert!(
         has_message(&output, "unused_signal_test"),
         "Should flag unused signal.\nOutput:\n{}",
@@ -653,7 +570,10 @@ fn comprehensive_unused_signal() {
 
 #[test]
 fn comprehensive_shadowed_variable() {
-    let output = run_gdeye("comprehensive_patterns.gd");
+    let output = run_rule(
+        "comprehensive_patterns.gd",
+        &["correctness/shadowed-variable"],
+    );
     assert!(
         has_message(&output, "shadow_target") && has_message(&output, "shadows"),
         "Should flag shadowed variable.\nOutput:\n{}",
@@ -663,7 +583,10 @@ fn comprehensive_shadowed_variable() {
 
 #[test]
 fn comprehensive_unreachable_after_break() {
-    let output = run_gdeye("comprehensive_patterns.gd");
+    let output = run_rule(
+        "comprehensive_patterns.gd",
+        &["correctness/unreachable-code"],
+    );
     assert!(
         count_rule(&output, "correctness/unreachable-code") >= 2,
         "Should flag unreachable code after break and continue.\nOutput:\n{}",
@@ -742,7 +665,7 @@ fn fail_on_check_subcommand() {
 
 #[test]
 fn cross_file_unused_member_flagged() {
-    let output = run_gdeye("cross_file_usage");
+    let output = run_rule("cross_file_usage", &["correctness/dead-store"]);
     assert!(
         has_message(&output, "`unused_stat`"),
         "Should flag genuinely unused member variable `unused_stat`.\nOutput:\n{}",
@@ -752,7 +675,7 @@ fn cross_file_unused_member_flagged() {
 
 #[test]
 fn cross_file_used_member_not_flagged() {
-    let output = run_gdeye("cross_file_usage");
+    let output = run_rule("cross_file_usage", &["correctness/dead-store"]);
     let unused_lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("dead-store"))
@@ -768,7 +691,7 @@ fn cross_file_used_member_not_flagged() {
 
 #[test]
 fn cross_file_scene_signal_not_flagged() {
-    let output = run_gdeye("cross_file_usage");
+    let output = run_rule("cross_file_usage", &["correctness/unused-signal"]);
     let signal_lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("unused-signal"))
@@ -784,7 +707,7 @@ fn cross_file_scene_signal_not_flagged() {
 
 #[test]
 fn cross_file_scene_property_marks_used() {
-    let output = run_gdeye("cross_file_usage");
+    let output = run_rule("cross_file_usage", &["correctness/dead-store"]);
     let unused_lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("dead-store"))

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use tree_sitter::Node;
 
@@ -43,6 +43,8 @@ pub struct Cfg {
     pub entry: usize,
     #[allow(dead_code)] // Used for CFG traversal exit point
     pub exit: usize,
+    /// Maps loop header block ID -> set of block IDs in that loop's body.
+    pub loops: HashMap<usize, HashSet<usize>>,
 }
 
 /// A basic block: a sequence of statements with no branches.
@@ -71,6 +73,9 @@ pub struct BasicBlock {
     /// Type refinements active in this block (var_name -> narrowed_type)
     /// These come from `if x is Type:` patterns where this is the then-branch
     pub type_refinements: HashMap<String, String>,
+    /// Simple condition variable guarding this block: (var_name, is_negated).
+    /// Set when this is the then-branch of `if <ident>:` or `if not <ident>:`.
+    pub condition_guard: Option<(String, bool)>,
 }
 
 /// Build control flow graphs for all functions in a parsed file.
@@ -113,6 +118,7 @@ fn build_cfg_for_function(func_node: Node, parsed: &ParsedFile) -> Option<Cfg> {
             has_assert_false: false,
             error_calls: Vec::new(),
             type_refinements: HashMap::new(),
+            condition_guard: None,
         });
     }
 
@@ -125,6 +131,7 @@ fn build_cfg_for_function(func_node: Node, parsed: &ParsedFile) -> Option<Cfg> {
         typed_edges: builder.typed_edges,
         entry: 0,
         exit,
+        loops: builder.loops,
     })
 }
 
@@ -184,6 +191,33 @@ fn extract_is_pattern(cond: Node, parsed: &ParsedFile) -> Option<(String, String
     None
 }
 
+/// Extract a simple condition guard from `if <ident>:` or `if not <ident>:`.
+/// Returns (variable_name, is_negated) if the condition is a bare identifier
+/// or a negated bare identifier.
+fn extract_simple_condition(cond: Node, parsed: &ParsedFile) -> Option<(String, bool)> {
+    // Bare identifier: `if flag:`
+    if cond.kind() == "identifier" || cond.kind() == "name" {
+        let name = parsed.node_text(cond).to_string();
+        return Some((name, false));
+    }
+    // Negated identifier: `if not flag:`
+    if cond.kind() == "not_operator" || cond.kind() == "unary_operator" {
+        let mut cursor = cond.walk();
+        let children: Vec<_> = cond.children(&mut cursor).collect();
+        if children.len() >= 2 {
+            let op = parsed.node_text(children[0]);
+            if op == "not" || op == "!" {
+                let operand = children[1];
+                if operand.kind() == "identifier" || operand.kind() == "name" {
+                    let name = parsed.node_text(operand).to_string();
+                    return Some((name, true));
+                }
+            }
+        }
+    }
+    None
+}
+
 /// Check if a call node is `assert(false)` or `assert(false, msg)`.
 fn is_assert_false(call: Node, parsed: &ParsedFile) -> bool {
     // Find arguments node
@@ -211,6 +245,7 @@ struct CfgBuilder {
     edges: HashMap<usize, Vec<usize>>,
     typed_edges: HashMap<usize, Vec<(usize, EdgeKind)>>,
     current_block: usize,
+    loops: HashMap<usize, HashSet<usize>>,
 }
 
 impl CfgBuilder {
@@ -228,12 +263,14 @@ impl CfgBuilder {
             has_assert_false: false,
             error_calls: Vec::new(),
             type_refinements: HashMap::new(),
+            condition_guard: None,
         };
         Self {
             blocks: vec![entry_block],
             edges: HashMap::new(),
             typed_edges: HashMap::new(),
             current_block: 0,
+            loops: HashMap::new(),
         }
     }
 
@@ -252,6 +289,7 @@ impl CfgBuilder {
             has_assert_false: false,
             error_calls: Vec::new(),
             type_refinements: HashMap::new(),
+            condition_guard: None,
         });
         id
     }
@@ -521,6 +559,11 @@ impl CfgBuilder {
             .child_by_field_name("condition")
             .and_then(|cond| extract_is_pattern(cond, parsed));
 
+        // Check for simple condition guard: `if flag:` or `if not flag:`
+        let condition_guard = node
+            .child_by_field_name("condition")
+            .and_then(|cond| extract_simple_condition(cond, parsed));
+
         let pre_if_block = self.current_block;
         let merge_block = self.new_block(node.end_position().row + 1);
         let mut cursor = node.walk();
@@ -539,6 +582,11 @@ impl CfgBuilder {
                         self.blocks[branch_block]
                             .type_refinements
                             .insert(var_name.clone(), type_name.clone());
+                    }
+
+                    // Apply condition guard to the then-branch
+                    if let Some(guard) = &condition_guard {
+                        self.blocks[branch_block].condition_guard = Some(guard.clone());
                     }
 
                     self.current_block = branch_block;
@@ -640,6 +688,10 @@ impl CfgBuilder {
         // NOW create after_loop - it will have an ID after all body blocks
         let after_loop = self.new_block(node.end_position().row + 1);
 
+        // Record loop body blocks for post-filtering
+        self.loops
+            .insert(loop_body, (loop_body..after_loop).collect());
+
         // Loop might not execute at all
         self.add_edge(pre_loop, after_loop);
 
@@ -703,6 +755,10 @@ impl CfgBuilder {
 
         // NOW create after_loop - it will have an ID after all body blocks
         let after_loop = self.new_block(node.end_position().row + 1);
+
+        // Record loop body blocks for post-filtering
+        self.loops
+            .insert(cond_block, (loop_body..after_loop).collect());
 
         // Condition can skip the loop
         self.add_edge(cond_block, after_loop);

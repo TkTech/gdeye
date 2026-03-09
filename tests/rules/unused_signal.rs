@@ -2,7 +2,10 @@ use crate::common::*;
 
 #[test]
 fn correctness_unused_signal() {
-    let output = run_gdeye("correctness_unused_signal.gd");
+    let output = run_rule(
+        "correctness_unused_signal.gd",
+        &["correctness/unused-signal"],
+    );
     assert!(
         has_message(&output, "Signal `unused_signal`"),
         "Should detect unused signal.\nOutput:\n{}",
@@ -12,7 +15,10 @@ fn correctness_unused_signal() {
 
 #[test]
 fn correctness_emitted_signal_not_flagged() {
-    let output = run_gdeye("correctness_unused_signal.gd");
+    let output = run_rule(
+        "correctness_unused_signal.gd",
+        &["correctness/unused-signal"],
+    );
     assert!(
         !has_message(&output, "`used_signal`"),
         "Should not flag emitted signal.\nOutput:\n{}",
@@ -22,7 +28,10 @@ fn correctness_emitted_signal_not_flagged() {
 
 #[test]
 fn correctness_connected_signal_not_flagged() {
-    let output = run_gdeye("correctness_unused_signal.gd");
+    let output = run_rule(
+        "correctness_unused_signal.gd",
+        &["correctness/unused-signal"],
+    );
     assert!(
         !has_message(&output, "`connected_signal`"),
         "Should not flag connected signal.\nOutput:\n{}",
@@ -33,21 +42,7 @@ fn correctness_connected_signal_not_flagged() {
 #[test]
 fn cross_file_signal_emitted_locally_not_flagged() {
     // player.gd emits `hit` and `died` signals via signal.emit() syntax
-    let output = run_gdeye_with_args(
-        "cross_file_usage",
-        &[
-            "--disable",
-            "style/naming-convention",
-            "--disable",
-            "style/untyped-parameter",
-            "--disable",
-            "style/untyped-return",
-            "--disable",
-            "style/function-too-long",
-            "--disable",
-            "style/excessive-nesting",
-        ],
-    );
+    let output = run_rule("cross_file_usage", &["correctness/unused-signal"]);
     let unused_signal_lines: Vec<&str> = output
         .lines()
         .filter(|l| l.contains("unused-signal"))
@@ -69,21 +64,7 @@ fn cross_file_signal_emitted_locally_not_flagged() {
 #[test]
 fn cross_file_signal_connected_externally_not_flagged() {
     // game.gd connects to player.hit via player.hit.connect() syntax
-    let output = run_gdeye_with_args(
-        "cross_file_usage",
-        &[
-            "--disable",
-            "style/naming-convention",
-            "--disable",
-            "style/untyped-parameter",
-            "--disable",
-            "style/untyped-return",
-            "--disable",
-            "style/function-too-long",
-            "--disable",
-            "style/excessive-nesting",
-        ],
-    );
+    let output = run_rule("cross_file_usage", &["correctness/unused-signal"]);
     // The hit signal should be marked as used because game.gd connects to it
     let unused_signal_lines: Vec<&str> = output
         .lines()

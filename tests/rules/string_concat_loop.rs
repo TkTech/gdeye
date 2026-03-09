@@ -2,7 +2,10 @@ use crate::common::*;
 
 #[test]
 fn perf_string_concat_loop_for() {
-    let output = run_gdeye("perf_string_concat_loop.gd");
+    let output = run_rule(
+        "perf_string_concat_loop.gd",
+        &["perf/string-concat-in-loop"],
+    );
     assert!(
         has_message(&output, "String concatenation in loop"),
         "Should detect string += in for loop.\nOutput:\n{}",
@@ -12,7 +15,10 @@ fn perf_string_concat_loop_for() {
 
 #[test]
 fn perf_string_concat_loop_correct_count() {
-    let output = run_gdeye("perf_string_concat_loop.gd");
+    let output = run_rule(
+        "perf_string_concat_loop.gd",
+        &["perf/string-concat-in-loop"],
+    );
     let count = count_rule(&output, "perf/string-concat-in-loop");
     // Should detect: bad_string_concat_for, bad_string_concat_while,
     // bad_string_concat_assignment, bad_string_concat_with_variable
