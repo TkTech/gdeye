@@ -1,9 +1,13 @@
 extends Node
 
 func test_chained():
-	get_node("Child").visible = false
 	get_node_or_null("Child").show()
 	find_child("Missing").queue_free()
+	get_child(0).visible = false
+
+func test_get_node_not_flagged():
+	# get_node throws on missing nodes, never returns null
+	get_node("Child").visible = false
 
 func test_dollar():
 	$Child.visible = false

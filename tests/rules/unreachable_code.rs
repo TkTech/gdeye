@@ -31,7 +31,7 @@ fn unreachable_correct_count() {
 fn unreachable_not_flagged_conditional_return() {
     let output = run_rule_stdout(
         "correctness_unreachable_code.gd",
-        "correctness/unreachable-code",
+        &["correctness/unreachable-code"],
         &["--format", "json"],
     );
     let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();

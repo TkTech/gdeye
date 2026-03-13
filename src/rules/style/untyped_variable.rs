@@ -48,15 +48,13 @@ impl Rule for UntypedVariable {
 }
 
 fn check_var(var: &VarDecl, func_name: Option<&str>) -> Option<Diagnostic> {
-    // Skip if already has a real type annotation (not `:=`)
-    if let Some(ref ann) = var.type_annotation {
-        if !ann.is_empty() && ann != ":=" {
-            return None;
-        }
-        // `:=` means using inferred-type operator, already typed at runtime
-        if ann == ":=" {
-            return None;
-        }
+    // Skip if already has any type annotation (explicit or `:=` inferred)
+    if var
+        .type_annotation
+        .as_ref()
+        .is_some_and(|a| !a.is_empty())
+    {
+        return None;
     }
 
     // Get the effective inferred type

@@ -14,10 +14,20 @@ fn chained_null_access() {
 fn dollar_access_not_flagged() {
     let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
     // $ is sugar for get_node() which throws on missing nodes, never returns null.
-    // Only get_node_or_null() returns null.
     assert!(
         !has_message(&output, "node access can return null"),
         "Should NOT flag $ access (get_node throws, doesn't return null).\nOutput:\n{}",
+        output
+    );
+}
+
+#[test]
+fn get_node_not_flagged() {
+    let output = run_rule("correctness_null_access.gd", &["correctness/null-access"]);
+    // get_node() throws on missing nodes, never returns null.
+    assert!(
+        !has_message(&output, "`get_node()` can return null"),
+        "Should NOT flag get_node() (throws, doesn't return null).\nOutput:\n{}",
         output
     );
 }

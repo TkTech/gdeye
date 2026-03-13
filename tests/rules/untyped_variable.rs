@@ -44,6 +44,26 @@ fn style_untyped_variable_skips_typed() {
 }
 
 #[test]
+fn style_untyped_variable_inferred_type_correct() {
+    let output = run_rule("style_rules.gd", &["style/untyped-variable"]);
+    assert!(
+        has_message(&output, "inferred: `Dictionary`"),
+        "Should infer Dictionary for untyped_dict.\nOutput:\n{}",
+        output
+    );
+    assert!(
+        has_message(&output, "inferred: `Array`"),
+        "Should infer Array for untyped_array.\nOutput:\n{}",
+        output
+    );
+    assert!(
+        has_message(&output, "inferred: `int`"),
+        "Should infer int for untyped_int.\nOutput:\n{}",
+        output
+    );
+}
+
+#[test]
 fn style_untyped_variable_flags_local() {
     let output = run_rule("style_rules.gd", &["style/untyped-variable"]);
     let lines: Vec<&str> = output

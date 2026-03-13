@@ -22,9 +22,13 @@ pub fn run_rule(fixture: &str, rules: &[&str]) -> String {
     run_gdeye_with_args(fixture, &args)
 }
 
-/// Run gdeye with only the specified rule enabled, returning stdout (for JSON/SARIF).
-pub fn run_rule_stdout(fixture: &str, rule: &str, extra_args: &[&str]) -> String {
-    let mut args = vec!["--rule", rule];
+/// Run gdeye with only the specified rule(s) enabled, returning stdout (for JSON/SARIF).
+pub fn run_rule_stdout(fixture: &str, rules: &[&str], extra_args: &[&str]) -> String {
+    let mut args: Vec<&str> = Vec::new();
+    for rule in rules {
+        args.push("--rule");
+        args.push(rule);
+    }
     args.extend_from_slice(extra_args);
     run_gdeye_stdout(fixture, &args)
 }

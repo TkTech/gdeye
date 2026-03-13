@@ -145,7 +145,7 @@ fn suppression_parameter_same_line() {
 fn format_json_outputs_array() {
     let output = run_rule_stdout(
         "correctness_unused_parameter.gd",
-        "correctness/unused-parameter",
+        &["correctness/unused-parameter"],
         &["--format", "json"],
     );
     let parsed: serde_json::Value =
@@ -159,7 +159,7 @@ fn format_json_outputs_array() {
 fn format_json_contains_rule_and_message() {
     let output = run_rule_stdout(
         "correctness_unused_parameter.gd",
-        "correctness/unused-parameter",
+        &["correctness/unused-parameter"],
         &["--format", "json"],
     );
     let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
@@ -172,7 +172,10 @@ fn format_json_contains_rule_and_message() {
 
 #[test]
 fn format_json_no_stderr_diagnostics() {
-    let output = run_gdeye_with_args("correctness_unused_parameter.gd", &["--format", "json"]);
+    let output = run_gdeye_with_args(
+        "correctness_unused_parameter.gd",
+        &["--format", "json", "--rule", "correctness/unused-parameter"],
+    );
     assert!(
         !output.contains("Warning:"),
         "JSON format should not emit text diagnostics to stderr.\nStderr:\n{}",
@@ -198,7 +201,7 @@ fn format_sarif_valid_structure() {
 fn format_sarif_contains_results() {
     let output = run_rule_stdout(
         "correctness_unused_parameter.gd",
-        "correctness/unused-parameter",
+        &["correctness/unused-parameter"],
         &["--format", "sarif"],
     );
     let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
@@ -268,7 +271,10 @@ fn format_compact_includes_path_line_col() {
 
 #[test]
 fn format_compact_no_summary() {
-    let output = run_gdeye_with_args("correctness_unused_variable.gd", &["--format", "compact"]);
+    let output = run_gdeye_with_args(
+        "correctness_unused_variable.gd",
+        &["--format", "compact", "--rule", "correctness/dead-store"],
+    );
     assert!(
         !output.contains("Found"),
         "Compact format should not include a summary line.\nOutput:\n{}",
@@ -293,7 +299,11 @@ fn format_text_summary_shows_counts() {
 
 #[test]
 fn format_text_summary_mixed_severities() {
-    let output = run_gdeye("suppression_comments.gd");
+    // Use rules that produce both warning and info severities
+    let output = run_rule(
+        "suppression_comments.gd",
+        &["correctness/dead-store", "correctness/unused-parameter"],
+    );
     assert!(
         output.contains("Found") && output.contains("warning") && output.contains("info"),
         "Text summary should include both warning and info counts.\nOutput:\n{}",

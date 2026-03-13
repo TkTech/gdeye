@@ -31,3 +31,8 @@ func test_assigned_to_member_field():
 	var node = Node3D.new()
 	asteroid_mesh = node
 	add_child(asteroid_mesh)  # node added via member field alias
+
+func test_alias_without_sink():
+	var node = Node3D.new()
+	var other = node
+	# alias exists but never added to tree — still orphaned

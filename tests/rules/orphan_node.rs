@@ -30,9 +30,9 @@ fn orphan_node_safe_not_flagged() {
 fn orphan_node_count() {
     let output = run_rule("correctness_orphan_node.gd", &["correctness/orphan-node"]);
     let count = count_rule(&output, "correctness/orphan-node");
-    assert!(
-        count >= 1,
-        "Expected at least 1 orphan-node warning. Got {}.\nOutput:\n{}",
+    assert_eq!(
+        count, 3,
+        "Expected 3 orphan-node warnings (orphan, unassigned, alias_without_sink). Got {}.\nOutput:\n{}",
         count,
         output
     );
@@ -49,6 +49,20 @@ fn orphan_node_alias_not_flagged() {
     assert!(
         lines.is_empty(),
         "Should NOT flag node added via alias variable.\nOutput:\n{}",
+        output
+    );
+}
+
+#[test]
+fn orphan_node_alias_without_sink_still_flagged() {
+    let output = run_rule("correctness_orphan_node.gd", &["correctness/orphan-node"]);
+    // test_alias_without_sink: alias exists but never added — should still warn.
+    // Count must be >= 3: orphan + unassigned + alias_without_sink.
+    let count = count_rule(&output, "correctness/orphan-node");
+    assert!(
+        count >= 3,
+        "Should flag node with alias but no sink (expected >= 3, got {}).\nOutput:\n{}",
+        count,
         output
     );
 }

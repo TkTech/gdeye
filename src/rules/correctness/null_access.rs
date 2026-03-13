@@ -5,8 +5,9 @@ use super::super::{Diagnostic, Rule, RuleContext, Severity};
 const RULE_ID: &str = "correctness/null-access";
 
 /// Functions that can return null.
+/// Note: `get_node` and `$` are NOT included — they throw on missing nodes
+/// rather than returning null. Only `get_node_or_null` returns null.
 const NULLABLE_FUNCTIONS: &[&str] = &[
-    "get_node",
     "get_node_or_null",
     "find_child",
     "get_child",
