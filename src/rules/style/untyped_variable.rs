@@ -49,11 +49,7 @@ impl Rule for UntypedVariable {
 
 fn check_var(var: &VarDecl, func_name: Option<&str>) -> Option<Diagnostic> {
     // Skip if already has any type annotation (explicit or `:=` inferred)
-    if var
-        .type_annotation
-        .as_ref()
-        .is_some_and(|a| !a.is_empty())
-    {
+    if var.type_annotation.as_ref().is_some_and(|a| !a.is_empty()) {
         return None;
     }
 

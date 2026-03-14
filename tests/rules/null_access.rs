@@ -41,8 +41,7 @@ fn null_access_count() {
     assert_eq!(
         count, 3,
         "Expected exactly 3 null-access warnings (chained calls only). Got {}.\nOutput:\n{}",
-        count,
-        output
+        count, output
     );
 }
 
