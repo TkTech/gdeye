@@ -64,14 +64,14 @@ fn check_onready_hoist(parsed: &ParsedFile, diagnostics: &mut Vec<Diagnostic>) {
             continue;
         }
 
-        // Skip if already has @onready
-        if has_onready_annotation(var_stmt, parsed) {
+        // Skip if already has @onready or @export
+        if has_onready_annotation(var_stmt, parsed) || has_export_annotation(var_stmt, parsed) {
             continue;
         }
 
-        // Check if initialized with get_node ($Path)
-        let get_node = parser::find_nodes_by_kind(var_stmt, "get_node");
-        if get_node.is_empty() {
+        // Check if the initializer expression contains get_node ($Path).
+        // Only search the initializer, not setter/getter bodies.
+        if !initializer_has_get_node(var_stmt) {
             continue;
         }
 
@@ -192,8 +192,8 @@ fn is_inside_function(node: tree_sitter::Node) -> bool {
     false
 }
 
-/// Check if a variable_statement has @onready annotation
-fn has_onready_annotation(var_stmt: tree_sitter::Node, parsed: &ParsedFile) -> bool {
+/// Check if a variable_statement has a specific annotation (e.g., "onready", "export").
+fn has_annotation(var_stmt: tree_sitter::Node, parsed: &ParsedFile, name: &str) -> bool {
     let mut cursor = var_stmt.walk();
     for child in var_stmt.children(&mut cursor) {
         if child.kind() == "annotations" {
@@ -202,15 +202,40 @@ fn has_onready_annotation(var_stmt: tree_sitter::Node, parsed: &ParsedFile) -> b
                 if annotation.kind() == "annotation" {
                     let mut ann_cursor = annotation.walk();
                     for ann_child in annotation.children(&mut ann_cursor) {
-                        if ann_child.kind() == "identifier" {
-                            let ann_name = parsed.node_text(ann_child);
-                            if ann_name == "onready" {
-                                return true;
-                            }
+                        if ann_child.kind() == "identifier" && parsed.node_text(ann_child) == name {
+                            return true;
                         }
                     }
                 }
             }
+        }
+    }
+    false
+}
+
+fn has_onready_annotation(var_stmt: tree_sitter::Node, parsed: &ParsedFile) -> bool {
+    has_annotation(var_stmt, parsed, "onready")
+}
+
+fn has_export_annotation(var_stmt: tree_sitter::Node, parsed: &ParsedFile) -> bool {
+    has_annotation(var_stmt, parsed, "export")
+}
+
+/// Check if the initializer expression of a variable_statement contains get_node ($Path).
+/// Only checks direct children of the variable_statement, NOT setter/getter bodies.
+fn initializer_has_get_node(var_stmt: tree_sitter::Node) -> bool {
+    let mut cursor = var_stmt.walk();
+    for child in var_stmt.children(&mut cursor) {
+        // Skip annotations, name, type, setget (setter/getter bodies)
+        match child.kind() {
+            "annotations" | "name" | "type" | "setget" => continue,
+            _ => {}
+        }
+        if child.kind() == "get_node" {
+            return true;
+        }
+        if !parser::find_nodes_by_kind(child, "get_node").is_empty() {
+            return true;
         }
     }
     false

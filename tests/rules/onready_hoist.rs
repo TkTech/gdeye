@@ -117,6 +117,29 @@ fn style_onready_hoist_has_fix() {
 }
 
 #[test]
+fn style_onready_hoist_export_not_flagged() {
+    let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
+    let onready_lines: Vec<&str> = output
+        .lines()
+        .filter(|l| l.contains("onready-hoist"))
+        .collect();
+    for line in &onready_lines {
+        assert!(
+            !line.contains("`text`"),
+            "Should NOT flag @export variable with $Node in setter.\nLine: {}\nOutput:\n{}",
+            line,
+            output
+        );
+        assert!(
+            !line.contains("`accent_color`"),
+            "Should NOT flag @export variable with $Node in getter.\nLine: {}\nOutput:\n{}",
+            line,
+            output
+        );
+    }
+}
+
+#[test]
 fn style_onready_hoist_inner_class_detected() {
     let output = run_rule("style_onready_hoist.gd", &["style/onready-hoist"]);
     assert!(

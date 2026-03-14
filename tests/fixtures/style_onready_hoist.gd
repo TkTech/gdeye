@@ -41,6 +41,18 @@ func other_func():
 # SHOULD NOT WARN: @onready var with type annotation
 @onready var typed_sprite: Sprite2D = $TypedSprite
 
+# SHOULD NOT WARN: @export variable (cannot combine @export with @onready)
+@export var text: String = "":
+	set(value):
+		text = value
+		if is_node_ready():
+			$HBox/Label.text = value
+
+# SHOULD NOT WARN: @export variable with $Node in getter
+@export var accent_color: Color = Color.WHITE:
+	get:
+		return $Panel.modulate
+
 # Test class to ensure inner classes work
 class InnerClass:
 	var inner_label = $InnerLabel  # SHOULD WARN
